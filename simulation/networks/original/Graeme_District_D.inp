@@ -1,0 +1,232 @@
+[TITLE]
+
+
+[JUNCTIONS]
+;ID              	Elev        	Demand      	Pattern         
+ 1               	6.5000      	25.000000   	                	;
+ 2               	6.5000      	34.050000   	                	;
+ 3               	6.5000      	32.930000   	                	;
+ 4               	6.5000      	30.520000   	                	;
+ 5               	6.5000      	73.380000   	                	;
+ 25              	6.5000      	57.840000   	                	;
+ 26              	6.5000      	39.740000   	                	;
+ 27              	6.5000      	102.510000  	                	;
+ 28              	6.5000      	24.800000   	                	;
+ 29              	6.5000      	23.810000   	                	;
+ 30              	6.5000      	37.180000   	                	;
+ 31              	6.5000      	40.310000   	                	;
+ 32              	6.5000      	35.140000   	                	;
+ 33              	6.5000      	50.070000   	                	;
+ 34              	6.5000      	55.190000   	                	;
+ 35              	6.5000      	43.860000   	                	;
+ 44              	6.5000      	22.530000   	                	;
+ 45              	6.5000      	22.060000   	                	;
+ 46              	6.5000      	24.510000   	                	;
+ 47              	6.5000      	21.130000   	                	;
+ 48              	6.5000      	20.270000   	                	;
+ 60              	6.5000      	61.950000   	                	;
+ 85              	6.5000      	95.490000   	                	;
+ 89              	6.5000      	245.520000  	                	;
+
+[RESERVOIRS]
+;ID              	Head        	Pattern         
+
+[TANKS]
+;ID              	Elevation   	InitLevel   	MinLevel    	MaxLevel    	Diameter    	MinVol      	VolCurve        	Overflow
+
+[PIPES]
+;ID              	Node1           	Node2           	Length      	Diameter    	Roughness   	MinorLoss   	Status
+ 1               	2               	1               	812.0000    	600.0000    	130.0000    	0.0000      	Open  	;
+ 2               	2               	3               	749.0000    	600.0000    	130.0000    	0.0000      	Open  	;
+ 3               	4               	3               	616.0000    	600.0000    	130.0000    	0.0000      	Open  	;
+ 4               	1               	4               	770.0000    	600.0000    	130.0000    	0.0000      	Open  	;
+ 5               	4               	5               	432.0000    	600.0000    	130.0000    	0.0000      	Open  	;
+ 35              	25              	89              	388.0000    	600.0000    	130.0000    	0.0000      	Open  	;
+ 37              	26              	25              	591.0000    	600.0000    	130.0000    	0.0000      	Open  	;
+ 38              	4               	26              	783.0000    	600.0000    	130.0000    	0.0000      	Open  	;
+ 39              	27              	85              	300.0000    	600.0000    	130.0000    	0.0000      	Open  	;
+ 40              	3               	27              	758.0000    	600.0000    	130.0000    	0.0000      	Open  	;
+ 41              	28              	34              	644.0000    	600.0000    	130.0000    	0.0000      	Open  	;
+ 42              	29              	28              	1324.0000   	600.0000    	130.0000    	0.0000      	Open  	;
+ 43              	30              	29              	601.0000    	600.0000    	130.0000    	0.0000      	Open  	;
+ 44              	30              	31              	899.0000    	600.0000    	130.0000    	0.0000      	Open  	;
+ 45              	31              	32              	794.0000    	600.0000    	130.0000    	0.0000      	Open  	;
+ 46              	32              	27              	652.0000    	600.0000    	130.0000    	0.0000      	Open  	;
+ 47              	32              	33              	579.0000    	600.0000    	130.0000    	0.0000      	Open  	;
+ 48              	33              	26              	684.0000    	600.0000    	130.0000    	0.0000      	Open  	;
+ 49              	33              	35              	595.0000    	600.0000    	130.0000    	0.0000      	Open  	;
+ 51              	34              	27              	432.0000    	600.0000    	130.0000    	0.0000      	Open  	;
+ 69              	45              	44              	581.0000    	600.0000    	130.0000    	0.0000      	Open  	;
+ 71              	31              	45              	552.0000    	600.0000    	130.0000    	0.0000      	Open  	;
+ 72              	46              	31              	622.0000    	600.0000    	130.0000    	0.0000      	Open  	;
+ 73              	46              	47              	504.0000    	600.0000    	130.0000    	0.0000      	Open  	;
+ 74              	47              	45              	635.0000    	600.0000    	130.0000    	0.0000      	Open  	;
+ 75              	47              	48              	590.0000    	600.0000    	130.0000    	0.0000      	Open  	;
+ 96              	60              	30              	682.0000    	600.0000    	130.0000    	0.0000      	Open  	;
+ 140             	85              	26              	293.0000    	600.0000    	130.0000    	0.0000      	Open  	;
+
+[PUMPS]
+;ID              	Node1           	Node2           	Parameters
+
+[VALVES]
+;ID              	Node1           	Node2           	Diameter    	Type	Setting     	MinorLoss   
+
+[TAGS]
+
+[DEMANDS]
+;Junction        	Demand      	Pattern         	Category
+
+[STATUS]
+;ID              	Status/Setting
+
+[PATTERNS]
+;ID              	Multipliers
+
+[CURVES]
+;ID              	X-Value     	Y-Value
+
+[CONTROLS]
+
+
+
+
+
+
+[RULES]
+
+
+
+
+
+
+
+
+
+[ENERGY]
+ Global Efficiency  	75.0000
+ Global Price       	0
+ Demand Charge      	0.0000
+
+[EMITTERS]
+;Junction        	Coefficient
+
+[QUALITY]
+;Node            	InitQual
+ 1               	9375.000000
+ 2               	8738.000000
+ 3               	7989.000000
+ 4               	8605.000000
+ 5               	9037.000000
+ 25              	8415.000000
+ 26              	7824.000000
+ 27              	7231.000000
+ 28              	6811.000000
+ 29              	5487.000000
+ 30              	4886.000000
+ 31              	5785.000000
+ 32              	6579.000000
+ 33              	7158.000000
+ 34              	7455.000000
+ 35              	7753.000000
+ 44              	6918.000000
+ 45              	6337.000000
+ 46              	5289.000000
+ 47              	5793.000000
+ 48              	6383.000000
+ 60              	4204.000000
+ 85              	7531.000000
+ 89              	8803.000000
+
+[SOURCES]
+;Node            	Type        	Quality     	Pattern
+
+[REACTIONS]
+;Type     	Pipe/Tank       	Coefficient
+
+
+[REACTIONS]
+ Order Bulk            	1.00
+ Order Tank            	1.00
+ Order Wall            	1
+ Global Bulk           	0.000000
+ Global Wall           	0.000000
+ Limiting Potential    	0
+ Roughness Correlation 	0
+
+[MIXING]
+;Tank            	Model
+
+[TIMES]
+ Duration           	0:00 
+ Hydraulic Timestep 	1:00 
+ Quality Timestep   	0:05 
+ Pattern Timestep   	1:00 
+ Pattern Start      	0:00 
+ Report Timestep    	1:00 
+ Report Start       	0:00 
+ Start ClockTime    	0:00:00
+ Statistic          	NONE
+
+[REPORT]
+ Status             	No
+ Summary            	No
+ Page               	0
+
+[OPTIONS]
+ Units              	LPS
+ Headloss           	H-W
+ Specific Gravity   	1.000000
+ Viscosity          	1.000000
+ Trials             	40
+ Accuracy           	0.00100000
+ CHECKFREQ          	2
+ MAXCHECK           	10
+ DAMPLIMIT          	0.00000000
+ Unbalanced         	Continue 10
+ Pattern            	1
+ Demand Multiplier  	0.2
+ Emitter Exponent   	0.5000
+ Quality            	NONE mg/L
+ Diffusivity        	1.000000
+ Tolerance          	0.01000000
+
+[COORDINATES]
+;Node            	X-Coord           	Y-Coord
+1               	514.650           	282.740           
+2               	512.500           	323.720           
+3               	474.740           	321.840           
+4               	476.620           	290.780           
+5               	482.780           	269.840           
+25              	437.610           	261.360           
+26              	437.100           	291.230           
+27              	436.470           	321.130           
+28              	431.620           	374.680           
+29              	368.000           	394.460           
+30              	363.490           	364.600           
+31              	363.460           	319.230           
+32              	403.560           	320.450           
+33              	402.560           	291.220           
+34              	435.630           	342.950           
+35              	401.370           	261.200           
+44              	363.410           	261.990           
+45              	363.310           	291.320           
+46              	332.110           	317.580           
+47              	331.270           	292.150           
+48              	330.470           	262.360           
+60              	329.130           	366.810           
+85              	436.980           	306.010           
+89              	437.410           	241.760           
+
+[VERTICES]
+;Link            	X-Coord           	Y-Coord
+
+[LABELS]
+;X-Coord             Y-Coord             Label & Anchor Node
+
+[BACKDROP]
+  DIMENSIONS  	0.000             	0.000             	10000.000         	10000.000         
+ UNITS          	None
+ FILE           	
+ OFFSET         	0.00            	0.00            
+
+[END]
