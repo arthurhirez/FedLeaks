@@ -1,0 +1,110 @@
+<?xml version="1.0" ?>
+<ScenarioCollection>
+    <Scenario name="Balerma_PIPELINE_PYTHON_Random_Multiple" network="../networks/Balerma_PIPELINE_PYTHON.inp" iterations="5040" timeStep="3600">
+        <SensorConfigs>
+            <SensorConfig name="DefaultSensors">
+                <PressureSensors>
+                    <Sensor id="382"/>
+                    <Sensor id="365"/>
+                    <Sensor id="180004"/>
+                    <Sensor id="3"/>
+                    <Sensor id="2"/>
+                    <Sensor id="42"/>
+                    <Sensor id="250004"/>
+                    <Sensor id="180003"/>
+                    <Sensor id="90"/>
+                    <Sensor id="387"/>
+                    <Sensor id="45"/>
+                    <Sensor id="249"/>
+                    <Sensor id="187"/>
+                    <Sensor id="266"/>
+                    <Sensor id="415"/>
+                    <Sensor id="106"/>
+                    <Sensor id="13"/>
+                    <Sensor id="180002"/>
+                    <Sensor id="268"/>
+                    <Sensor id="385"/>
+                    <Sensor id="416"/>
+                    <Sensor id="381"/>
+                    <Sensor id="4"/>
+                    <Sensor id="372"/>
+                    <Sensor id="414"/>
+                    <Sensor id="1"/>
+                    <Sensor id="46"/>
+                    <Sensor id="27"/>
+                    <Sensor id="202001"/>
+                    <Sensor id="380"/>
+                    <Sensor id="413"/>
+                    <Sensor id="345"/>
+                    <Sensor id="601"/>
+                    <Sensor id="63"/>
+                </PressureSensors>
+                <FlowSensors>
+                    <Sensor id="512"/>
+                    <Sensor id="620"/>
+                    <Sensor id="349"/>
+                    <Sensor id="424"/>
+                    <Sensor id="550"/>
+                    <Sensor id="221"/>
+                    <Sensor id="148"/>
+                    <Sensor id="149"/>
+                    <Sensor id="51"/>
+                    <Sensor id="593"/>
+                    <Sensor id="131"/>
+                    <Sensor id="549"/>
+                    <Sensor id="317"/>
+                    <Sensor id="575"/>
+                </FlowSensors>
+                <DemandSensors>
+                    <Sensor id="382"/>
+                    <Sensor id="365"/>
+                    <Sensor id="180004"/>
+                    <Sensor id="3"/>
+                    <Sensor id="2"/>
+                    <Sensor id="42"/>
+                    <Sensor id="250004"/>
+                    <Sensor id="180003"/>
+                    <Sensor id="90"/>
+                    <Sensor id="387"/>
+                    <Sensor id="45"/>
+                    <Sensor id="249"/>
+                    <Sensor id="187"/>
+                    <Sensor id="266"/>
+                    <Sensor id="415"/>
+                    <Sensor id="106"/>
+                    <Sensor id="13"/>
+                    <Sensor id="180002"/>
+                    <Sensor id="268"/>
+                    <Sensor id="385"/>
+                    <Sensor id="416"/>
+                    <Sensor id="381"/>
+                    <Sensor id="4"/>
+                    <Sensor id="372"/>
+                    <Sensor id="414"/>
+                    <Sensor id="1"/>
+                    <Sensor id="46"/>
+                    <Sensor id="27"/>
+                    <Sensor id="202001"/>
+                    <Sensor id="380"/>
+                    <Sensor id="413"/>
+                    <Sensor id="345"/>
+                    <Sensor id="601"/>
+                    <Sensor id="63"/>
+                </DemandSensors>
+            </SensorConfig>
+        </SensorConfigs>
+        <SensorfaultConfigs>
+            <SensorfaultConfig name="GT"/>
+        </SensorfaultConfigs>
+        <LeakConfigs>
+            <LeakConfig name="Baseline"/>
+            <LeakConfig name="AutoScenario_1">
+                <Leak pipeId="51" type="abrupt" diameter="0.014555069818727359" start="2523" end="2596"/>
+                <Leak pipeId="620" type="incipient" diameter="0.015612802029995598" start="364" end="456" peak="410"/>
+                <Leak pipeId="549" type="abrupt" diameter="0.015432215409222771" start="1690" end="1898"/>
+                <Leak pipeId="148" type="incipient" diameter="0.015617150423141445" start="4038" end="4184" peak="4111"/>
+                <Leak pipeId="424" type="incipient" diameter="0.016860296653623298" start="1921" end="2104" peak="2012"/>
+            </LeakConfig>
+        </LeakConfigs>
+    </Scenario>
+</ScenarioCollection>
