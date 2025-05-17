@@ -7,8 +7,6 @@ from datasets.utils import FederatedDataset
 from models.utils.federated_model import FederatedModel
 from utils.timeseries_detection import find_anomalies
 
-
-
 def train(model: FederatedModel, private_dataset: FederatedDataset, scenario: str,
           args: Namespace) -> None:
     # if args.csv_log:
@@ -23,8 +21,9 @@ def train(model: FederatedModel, private_dataset: FederatedDataset, scenario: st
     model.trainloaders = private_train_loaders  # TODO REVER ISSO!!!
 
     if hasattr(model, 'ini'):
-        model.ini(same_for_all = False)
+        model.ini()
 
+    latent_history = []
 
     Epoch = args.communication_epoch
     for epoch_index in range(Epoch):
@@ -38,11 +37,13 @@ def train(model: FederatedModel, private_dataset: FederatedDataset, scenario: st
         aux_latent = local_evaluate(model=model, train_dl=priv_train_loaders, private_dataset=private_dataset,
                                     group_detections=False)
 
+        latent_history.append(aux_latent)
+
         # print(10*'**--')
         # print('COM AGREGAÇÃO')
         # local_evaluate(model = model, train_dl = priv_train_loaders[1], df_results = df_results, group_detections = True)
 
-    return priv_train_loaders, aux_latent
+    return priv_train_loaders, latent_history
 
 
 
