@@ -122,19 +122,31 @@ class AER(nn.Module):
         # Use your build_stack function here
         return build_stack(layers_config, self.hyperparameters, input_dim)
 
-    def initialize_model(self):
-        dummy_X = np.random.uniform(-1, 1, size = (1,
-                                                   self.hyperparameters['target_shape'][0] - 2,
-                                                   self.hyperparameters['target_shape'][1]))
-        dummy_y = np.copy(dummy_X)
+    def prepare_data(self, X: np.ndarray, y: np.ndarray = None):
+        """
+        Prepares PyTorch DataLoader from input data.
+        """
+        if y is None:
+            y = X.copy()
 
-        kwargs_dummy = {'repeat_vector_n': self.input_shape[0],#self.input_shape[0] + 2,
-                        'lstm_units': int(self.lstm_units)}
+        device = "cpu"
 
-        self._augment_hyperparameters(dummy_X, dummy_y, kwargs = kwargs_dummy)
+        X = X[:, 1:-1, :]
+        ry, y, fy = y[:, 0], y[:, 1:-1], y[:, -1]
 
-        self._build_aer(**kwargs_dummy)
-        print('Initialized model AER with random weights.')
+        X_tensor = torch.tensor(X, dtype=torch.float32)
+        y_tensor = torch.tensor(y, dtype=torch.float32)
+        ry_tensor = torch.tensor(ry, dtype=torch.float32).unsqueeze(-1)
+        fy_tensor = torch.tensor(fy, dtype=torch.float32).unsqueeze(-1)
+
+        dataset = torch.utils.data.TensorDataset(X_tensor, ry_tensor, y_tensor, fy_tensor)
+        dataloader = torch.utils.data.DataLoader(dataset, batch_size=self.batch_size, shuffle=self.shuffle)
+
+        return dataloader
+
+    def initialize_optimizer(self):
+        if not hasattr(self, "optimizer"):
+            self.optimizer = self.optimizer_class(self.parameters(), lr=self.learning_rate)
 
     def _augment_hyperparameters(self, X, y, kwargs):
         X = torch.as_tensor(X)
@@ -164,7 +176,7 @@ class AER(nn.Module):
 
         # Decode
         repeated = self.decoder[0](hidden)                   # RepeatVector
-        seq_out, _ = self.decoder[1](repeated)               # LSTM
+        seq_out, (x_lat, _) = self.decoder[1](repeated)      # LSTM
         decoded = self.decoder[2](seq_out)                   # TimeDistributed(Dense)
 
         # Slice output
@@ -174,8 +186,10 @@ class AER(nn.Module):
 
         # Ensure reconstruction shape matches input
         y = y.reshape(batch_size, x.shape[1], -1)
+        latent = x_lat.detach().numpy()
+        latent = latent.reshape(x_lat.shape[1], -1)
 
-        return ry, y, fy
+        return ry, y, fy, latent
 
     def fit(self, X: np.ndarray, y: np.ndarray = None, **kwargs):
         """
@@ -291,7 +305,7 @@ class AER(nn.Module):
         if hasattr(fy_hat, 'detach'):
             fy_hat = fy_hat.detach().cpu().numpy()
 
-        input_window = self.input_shape[0] + 2
+        input_window = self.input_shape[0]
         aux_errors = []
 
         for channel in range(X.shape[2]):

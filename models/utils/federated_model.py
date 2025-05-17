@@ -80,7 +80,7 @@ class FederatedModel(nn.Module):
             prev_net = prev_nets_list[net_id]
             prev_net.load_state_dict(net_para)
 
-    def aggregate_nets(self, epoch_index, freq=None):
+    def aggregate_nets(self, freq=None):
         global_net = self.global_net
         nets_list = self.nets_list
 

@@ -9,6 +9,7 @@ from utils.finch import FINCH
 import numpy as np
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 
+
 # def get_parser() -> ArgumentParser:
 #     parser = ArgumentParser(description='Federated learning via FedHierarchy.')
 #     add_management_args(parser)
@@ -39,11 +40,12 @@ class FPL(FederatedModel):
 
     def __init__(self, nets_list, args, transform):
         super(FPL, self).__init__(nets_list, args, transform)
-        self.global_protos = [] # lista #classes prototipos globais
-        self.local_protos = {} # dict #clientes : lista #classes prototipos locais
+        self.global_protos = []  # lista #classes prototipos globais
+        self.local_protos = {}  # dict #clientes : lista #classes prototipos locais
         self.clients_domains = None
-        self.global_history = [] # comm_epoch : deepcopy(global_protos)
-        self.local_history = {idx: [] for idx in range(self.online_num)} # comm_epoch : {client : {local_epoch : deepcopy(local_protos)}}
+        self.global_history = []  # comm_epoch : deepcopy(global_protos)
+        self.local_history = {idx: [] for idx in
+                              range(self.online_num)}  # comm_epoch : {client : {local_epoch : deepcopy(local_protos)}}
         self.local_metrics_train = {idx: [] for idx in range(self.online_num)}
         self.local_metrics_test = {idx: [] for idx in range(self.online_num)}
 
@@ -111,71 +113,70 @@ class FPL(FederatedModel):
 
         # self.global_history.append(agg_protos_label.detach().cpu().numpy())
         self.global_history.append({
-                        key: [t.detach().cpu().numpy() for t in tensor_list]  # Convert each tensor
-                        if isinstance(tensor_list, list) else tensor_list.detach().cpu().numpy()  # Handle single tensors
-                        for key, tensor_list in agg_protos_label.items()
-                    })
+            key: [t.detach().cpu().numpy() for t in tensor_list]  # Convert each tensor
+            if isinstance(tensor_list, list) else tensor_list.detach().cpu().numpy()  # Handle single tensors
+            for key, tensor_list in agg_protos_label.items()
+        })
 
         return agg_protos_label
 
     def hierarchical_info_loss(self, f_now, label, all_f, mean_f, all_global_protos_keys):
-        print("\n=== DEBUGGING INFO ===")
+        # print("\n=== DEBUGGING INFO ===")
+        #
+        # # Print type and shape of all_f elements
+        # print("Type of all_f:", type(all_f))
+        # if isinstance(all_f, list):
+        #     print(f"all_f contains {len(all_f)} elements.")
+        #     for i, item in enumerate(all_f):
+        #         print(f"Element {i}: Type={type(item)}, Shape={item.shape if hasattr(item, 'shape') else 'N/A'}")
+        # elif isinstance(all_f, torch.Tensor):
+        #     print(f"all_f is a tensor with shape: {all_f.shape}")
+        # elif isinstance(all_f, np.ndarray):
+        #     print(f"all_f is a numpy array with shape: {all_f.shape}")
+        #
+        # # Print type and shape of all_global_protos_keys
+        # print("\nType of all_global_protos_keys:", type(all_global_protos_keys))
+        # if isinstance(all_global_protos_keys, torch.Tensor):
+        #     print(f"Shape of all_global_protos_keys torch.Tensor: {all_global_protos_keys.shape}")
+        # elif isinstance(all_global_protos_keys, np.ndarray):
+        #     print(f"Shape of all_global_protos_keys np.array: {all_global_protos_keys.shape}")
+        #
+        # # Print label info
+        # print("\nType of label:", type(label))
+        # if isinstance(label, torch.Tensor):
+        #     print(f"Label torch.Tensor value: {label} {label.item()}, Shape: {label.shape}")
+        # elif isinstance(label, np.ndarray):
+        #     print(f"Label np.ndarray value: {label}, Shape: {label.shape}")
+        #
+        #
+        # print("\nType of meanf:", type(mean_f))
+        #
+        # print(f"meanf torch.Tensor value: Shape: {len(mean_f)}")
 
-        # Print type and shape of all_f elements
-        print("Type of all_f:", type(all_f))
-        if isinstance(all_f, list):
-            print(f"all_f contains {len(all_f)} elements.")
-            for i, item in enumerate(all_f):
-                print(f"Element {i}: Type={type(item)}, Shape={item.shape if hasattr(item, 'shape') else 'N/A'}")
-        elif isinstance(all_f, torch.Tensor):
-            print(f"all_f is a tensor with shape: {all_f.shape}")
-        elif isinstance(all_f, np.ndarray):
-            print(f"all_f is a numpy array with shape: {all_f.shape}")
+        #
+        # # Check boolean indexing
+        # try:
+        #     indices = (all_global_protos_keys == label.item()).nonzero()
+        #     print(f"\nNumber of matching indices: {len(indices)}")
+        #     if len(indices) > 0:
+        #         print(f"First matching index: {indices[0]}")
+        #         print(f"Indexes: {indices}")
+        # except Exception as e:
+        #     print("\nError while checking indices:", e)
+        #
+        # print("\n======================\n")
 
-        # Print type and shape of all_global_protos_keys
-        print("\nType of all_global_protos_keys:", type(all_global_protos_keys))
-        if isinstance(all_global_protos_keys, torch.Tensor):
-            print(f"Shape of all_global_protos_keys torch.Tensor: {all_global_protos_keys.shape}")
-        elif isinstance(all_global_protos_keys, np.ndarray):
-            print(f"Shape of all_global_protos_keys np.array: {all_global_protos_keys.shape}")
+        # f_pos = np.array(all_f)[all_global_protos_keys == label.item()][0].to(self.device)
+        # f_neg = torch.cat(list(np.array(all_f)[all_global_protos_keys != label.item()])).to(self.device)
 
-        # Print label info
-        print("\nType of label:", type(label))
-        if isinstance(label, torch.Tensor):
-            print(f"Label torch.Tensor value: {label} {label.item()}, Shape: {label.shape}")
-        elif isinstance(label, np.ndarray):
-            print(f"Label np.ndarray value: {label}, Shape: {label.shape}")
-
-
-        print("\nType of meanf:", type(mean_f))
-
-        print(f"meanf torch.Tensor value: Shape: {len(mean_f)}")
-
-
-        # Check boolean indexing
-        try:
-            indices = (all_global_protos_keys == label.item()).nonzero()
-            print(f"\nNumber of matching indices: {len(indices)}")
-            if len(indices) > 0:
-                print(f"First matching index: {indices[0]}")
-                print(f"Indexes: {indices}")
-        except Exception as e:
-            print("\nError while checking indices:", e)
-
-        print("\n======================\n")
-
-        f_pos = np.array(all_f)[all_global_protos_keys == label.item()][0].to(self.device)
-        f_neg = torch.cat(list(np.array(all_f)[all_global_protos_keys != label.item()])).to(self.device)
-
-        f_pos = [f for i, f in enumerate(all_f) if all_global_protos_keys[i] == label.item()][0].to(self.device)
-        f_neg = torch.cat([f for i, f in enumerate(all_f) if all_global_protos_keys[i] != label.item()]).to(self.device)
-        xi_info_loss = self.calculate_infonce(f_now, f_pos, f_neg)
-
-
-        # mean_f_pos = np.array(mean_f)[all_global_protos_keys == label.item()][0].to(self.device)
-        mean_f_pos = [f for i, f in enumerate(all_f) if all_global_protos_keys[i] == label.item()][0].to(self.device)
-        mean_f_pos = mean_f_pos.view(1, -1)
-        # COMENTAR AQUI AQUI O DEBUG
+        # f_pos = [f for i, f in enumerate(all_f) if all_global_protos_keys[i] == label.item()][0].to(self.device)
+        # f_neg = torch.cat([f for i, f in enumerate(all_f) if all_global_protos_keys[i] != label.item()]).to(self.device)
+        # xi_info_loss = self.calculate_infonce(f_now, f_pos, f_neg)
+        #
+        #
+        # # mean_f_pos = np.array(mean_f)[all_global_protos_keys == label.item()][0].to(self.device)
+        # mean_f_pos = [f for i, f in enumerate(all_f) if all_global_protos_keys[i] == label.item()][0].to(self.device)
+        # mean_f_pos = mean_f_pos.view(1, -1)
 
         f_idx = np.where(all_global_protos_keys == label.item())[0][0]
         f_pos = all_f[f_idx].to(self.device)
@@ -210,28 +211,108 @@ class FPL(FederatedModel):
         infonce_loss = -torch.log(sum_pos_l / sum_exp_l)
         return infonce_loss
 
-    def loc_update(self, priloader_list):
+    def loc_update(self, priloader_list, testloader_list, mapped_indexes, epoch_index):
         total_clients = list(range(self.args.parti_num))
-        # online_clients = self.random_state.choice(total_clients, self.online_num, replace=False).tolist()
+        online_clients = self.random_state.choice(total_clients,self.online_num,replace=False).tolist()
+        self.online_clients = online_clients
 
-        self.online_clients = total_clients
-
-        for i in self.online_clients:
-            self._train_net(index = i, net = self.nets_list[i], data_client = priloader_list[i])
+        for i in online_clients:
+            self._train_net(i, self.nets_list[i], priloader_list[i])
         self.global_protos = self.proto_aggregation(self.local_protos)
         self.aggregate_nets(None)
 
         # # Evaluate each client on test data
+        # for i in online_clients:
+        #     self.evaluate_client(i, self.nets_list[i], priloader_list[i][epoch_index], train_test='train')
+        #     self.evaluate_client(i, self.nets_list[i], testloader_list[mapped_indexes[i]], train_test='test')
 
-    # def evaluate_client(self, index, net, data_loader, train_test):
+        return None
+
+    def evaluate_client(self, index, net, data_loader, train_test):
+        """
+        Evaluate a trained client model on its test dataset and compute multiple metrics per label.
+
+        Args:
+            index (int): Client index.
+            net (torch.nn.Module): The trained client network.
+            data_loader (DataLoader): The test dataset.
+            train_test (str): Indicates whether it's train or test evaluation.
+
+        Returns:
+            dict: Dictionary containing overall accuracy and per-label metrics.
+        """
+        net.eval()  # Set model to evaluation mode
+
+        all_labels = []
+        all_preds = []
+
+        with torch.no_grad():  # Disable gradient computation for efficiency
+            for images, labels in data_loader:
+                images, labels = images.to(self.device), labels.to(self.device)
+                outputs = net(images)
+                _, predicted = torch.max(outputs, 1)  # Get predicted class
+
+                all_labels.extend(labels.cpu().numpy())
+                all_preds.extend(predicted.cpu().numpy())
+
+        all_labels = np.array(all_labels)
+        all_preds = np.array(all_preds)
+
+        # Compute overall accuracy
+        acc = accuracy_score(all_labels, all_preds) * 100
+
+        # Compute per-label accuracy
+        unique_labels = np.unique(all_labels)  # Get unique class labels
+        per_label_accuracy = {}
+
+        for label in unique_labels:
+            mask = all_labels == label
+            correct = np.sum(all_preds[mask] == label)
+            total = np.sum(mask)
+            per_label_accuracy[label] = (correct / total) * 100 if total > 0 else 0
+
+        # Compute per-label precision, recall, and F1-score
+        precision_per_label = precision_score(all_labels, all_preds, average=None, zero_division=0) * 100
+        recall_per_label = recall_score(all_labels, all_preds, average=None, zero_division=0) * 100
+        f1_per_label = f1_score(all_labels, all_preds, average=None, zero_division=0) * 100
+
+        # Compute macro-averaged metrics
+        precision_macro = precision_score(all_labels, all_preds, average="macro", zero_division=0) * 100
+        recall_macro = recall_score(all_labels, all_preds, average="macro", zero_division=0) * 100
+        f1_macro = f1_score(all_labels, all_preds, average="macro", zero_division=0) * 100
+
+        # Store metrics
+        client_metrics = {
+            "accuracy": acc,
+            "macro_precision": precision_macro,
+            "macro_recall": recall_macro,
+            "macro_f1-score": f1_macro,
+            "per_label_metrics": {
+                "accuracy": per_label_accuracy,
+                "precision": precision_per_label.tolist(),
+                "recall": recall_per_label.tolist(),
+                "f1-score": f1_per_label.tolist()
+            }
+        }
+
+        if train_test.lower() == 'train':
+            self.local_metrics_train[index].append(client_metrics)
+        elif train_test.lower() == 'test':
+            self.local_metrics_test[index].append(client_metrics)
+        else:
+            raise ValueError("Invalid train_test parameter. Use 'train' or 'test'.")
+
+        net.train()  # Restore model to training mode
+        return client_metrics
 
 
-    def _train_net(self, index, net, data_client):
-        print(f'Training client {index}')
-        # net = net.to(self.device)
-        # optimizer = optim.SGD(net.parameters(), lr=self.local_lr, momentum=0.9, weight_decay=1e-5)
-        # criterion = nn.CrossEntropyLoss()
-        # criterion.to(self.device)
+    def _train_net(self, index, model, train_loader, device="cpu", reg_ratio=0.5, verbose=True):
+        data_loader = model.prepare_data(train_loader)
+        model = model.to(device)
+        model.train()
+        model.initialize_optimizer()  # initializes if not already done
+        optimizer = model.optimizer
+        criterion = nn.MSELoss()
 
         if len(self.global_protos) != 0:
             all_global_protos_keys = np.array(list(self.global_protos.keys()))
@@ -245,60 +326,71 @@ class FPL(FederatedModel):
             all_f = [item.detach() for item in all_f]
             mean_f = [item.detach() for item in mean_f]
 
-        train_loader = net.create_dataloader(X = data_client)
-
         iterator = tqdm(range(self.local_epoch))
         for iter in iterator:
             agg_protos_label = {}
-            # for batch_idx, (time_serie) in enumerate(data_client):
+            epoch_loss = 0
+            for xb, ryb, yb, fyb in data_loader:
+                xb = xb.to(device)
+                ryb = ryb.to(device)
+                yb = yb.to(device)
+                fyb = fyb.to(device)
 
-            net.optimizer.zero_grad()
+                optimizer.zero_grad()
+                out_ry, out_y, out_fy, latent = model(xb)
 
-            # images = images.to(self.device)
-            # labels = labels.to(self.device)
-            _, _, _, f = net.predict(data_client)
-            # outputs = net.classifier(f)
+                loss_ry = criterion(out_ry, torch.squeeze(ryb))
+                loss_y = criterion(out_y, yb)
+                loss_fy = criterion(out_fy, torch.squeeze(fyb))
 
-            # lossCE = criterion(outputs, labels)
+                loss = (reg_ratio / 2) * loss_ry + (1 - reg_ratio) * loss_y + (reg_ratio / 2) * loss_fy
+                # loss.backward()
+                # optimizer.step()
 
-            if len(self.global_protos) == 0:
-                loss_InfoNCE = 0 #* lossCE
-            else:
-                i = 0
-                loss_InfoNCE = None
+                epoch_loss += loss.item()
 
-                for label in labels:
-                    if label.item() in self.global_protos.keys():
-                        f_now = f[i].unsqueeze(0)
-                        loss_instance = self.hierarchical_info_loss(f_now, label, all_f, mean_f, all_global_protos_keys)
+                # print(images.shape, labels.shape, lossCE.shape, type(lossCE))
 
-                        if loss_InfoNCE is None:
-                            loss_InfoNCE = loss_instance
+                if len(self.global_protos) == 0:
+                    loss_InfoNCE = 0 #* lossCE
+                else:
+                    i = 0
+                    loss_InfoNCE = None
+
+                    for label in labels:
+                        if label.item() in self.global_protos.keys():
+                            f_now = f[i].unsqueeze(0)
+                            loss_instance = self.hierarchical_info_loss(f_now, label, all_f, mean_f,
+                                                                        all_global_protos_keys)
+
+                            if loss_InfoNCE is None:
+                                loss_InfoNCE = loss_instance
+                            else:
+                                loss_InfoNCE += loss_instance
+                        i += 1
+                    loss_InfoNCE = loss_InfoNCE / i
+                loss_InfoNCE = loss_InfoNCE
+
+                print(loss_InfoNCE.shape, loss_InfoNCE, type(loss_InfoNCE))
+
+                loss = epoch_loss + loss_InfoNCE
+                loss.backward()
+                iterator.desc = "Local Pariticipant %d CE = %0.3f,InfoNCE = %0.3f" % (index, lossCE, loss_InfoNCE)
+                optimizer.step()
+
+                if iter == self.local_epoch - 1:
+                    for i in range(len(labels)):
+                        if labels[i].item() in agg_protos_label:
+                            agg_protos_label[labels[i].item()].append(f[i, :])
                         else:
-                            loss_InfoNCE += loss_instance
-                    i += 1
-                loss_InfoNCE = loss_InfoNCE / i
-            loss_InfoNCE = loss_InfoNCE
-
-            # loss = lossCE + loss_InfoNCE
-            loss = loss_InfoNCE
-            loss.backward()
-            iterator.desc = "Local Pariticipant %d CE = %0.3f,InfoNCE = %0.3f" % (index, loss_InfoNCE)
-            net.optimizer.step()
-
-            # if iter == self.local_epoch - 1:
-            #     for i in range(len(labels)):
-            #         if labels[i].item() in agg_protos_label:
-            #             agg_protos_label[labels[i].item()].append(f[i, :])
-            #         else:
-            #             agg_protos_label[labels[i].item()] = [f[i, :]]
+                            agg_protos_label[labels[i].item()] = [f[i, :]]
 
         agg_protos = agg_func(agg_protos_label)
 
         # self.local_history[index].append(copy.deepcopy(agg_protos))
         self.local_history[index].append({
-                                        key: tensor.detach().cpu().numpy()
-                                        for key, tensor in agg_protos.items()
-                                    })
+            key: tensor.detach().cpu().numpy()
+            for key, tensor in agg_protos.items()
+        })
 
         self.local_protos[index] = agg_protos
