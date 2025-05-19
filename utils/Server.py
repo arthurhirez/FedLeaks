@@ -15,8 +15,10 @@ def train(model: FederatedModel, private_dataset: FederatedDataset, scenario: st
     priv_train_loaders = private_dataset.get_data_loaders(scenario=scenario)
 
     private_train_loaders = []
+    private_train_labels = []
     for loader in priv_train_loaders:
         private_train_loaders.append(loader['X'])
+        private_train_labels.append(loader['X_index'])
 
     model.trainloaders = private_train_loaders  # TODO REVER ISSO!!!
 
@@ -29,12 +31,15 @@ def train(model: FederatedModel, private_dataset: FederatedDataset, scenario: st
     for epoch_index in range(Epoch):
         model.epoch_index = epoch_index
         if hasattr(model, 'loc_update'):
-            epoch_loc_loss_dict = model.loc_update(private_train_loaders)
+            epoch_loc_loss_dict = model.loc_update(priloader_list = private_train_loaders,
+                                                   prilabel_list = private_train_labels)
 
         print(10 * '**--')
         print('SEM AGREGAÇÃO')
 
-        aux_latent = local_evaluate(model=model, train_dl=priv_train_loaders, private_dataset=private_dataset,
+        aux_latent = local_evaluate(model=model,
+                                    train_dl=priv_train_loaders,
+                                    private_dataset=private_dataset,
                                     group_detections=False)
 
         latent_history.append(aux_latent)

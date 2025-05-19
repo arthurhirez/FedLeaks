@@ -18,7 +18,7 @@ import os
 
 
 class BuildingAssigner:
-    def __init__(self, node_list, water_network, income_level='medium', density_level='medium', seed=None):
+    def __init__(self, node_list, water_network, income_level='medium', density_level='medium', seed=23):
         """
         Initialize the building assigner using high-level urban characteristics.
 

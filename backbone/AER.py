@@ -1,3 +1,4 @@
+import pandas as pd
 import numpy as np
 from numpy import ndarray
 
@@ -75,7 +76,7 @@ class AER(nn.Module):
                  epochs: int = 35, batch_size: int = 64, shuffle: bool = True,
                  verbose: bool = True, callbacks: tuple = tuple(), reg_ratio: float = 0.5,
                  input_shape: tuple = tuple(), lstm_units: int = 30, validation_split: float = 0.0,
-                 id_exp: str = '001', id_comm_epoch: str = 'VERIFY',
+                 id_exp: str = '001', id_comm_epoch: str = 'VERIFY',  agg_interval: int = 2,
                  load_trained_model: bool = False, load_path: str = None,
                  **hyperparameters):
         super().__init__()
@@ -84,6 +85,7 @@ class AER(nn.Module):
         self.layers_decoder = layers_decoder
         self.input_shape = input_shape  # (seq_len, n_features)
         self.seq_len, self.input_dim = input_shape
+        self.agg_interval = agg_interval
 
         self.epochs = epochs
         self.batch_size = batch_size
@@ -122,15 +124,21 @@ class AER(nn.Module):
         # Use your build_stack function here
         return build_stack(layers_config, self.hyperparameters, input_dim)
 
-    def prepare_data(self, X: np.ndarray, y: np.ndarray = None):
+    def prepare_data(self, X: np.ndarray, X_index: np.ndarray, y: np.ndarray = None):
         """
-        Prepares PyTorch DataLoader from input data.
+        Prepares PyTorch DataLoader from input data, including hour-based label.
         """
         if y is None:
             y = X.copy()
 
-        device = "cpu"
+        # Extract 12-hour format label from timestamps
+        timestamps = pd.to_datetime(X_index, unit='s')
+        hour = timestamps.hour
+        label = hour.where(hour < 12, hour - 12).to_numpy()
+        label = label / self.agg_interval
+        label_tensor = torch.tensor(label, dtype=torch.int64)  # or float32 if needed
 
+        # Prepare input and targets
         X = X[:, 1:-1, :]
         ry, y, fy = y[:, 0], y[:, 1:-1], y[:, -1]
 
@@ -139,7 +147,8 @@ class AER(nn.Module):
         ry_tensor = torch.tensor(ry, dtype=torch.float32).unsqueeze(-1)
         fy_tensor = torch.tensor(fy, dtype=torch.float32).unsqueeze(-1)
 
-        dataset = torch.utils.data.TensorDataset(X_tensor, ry_tensor, y_tensor, fy_tensor)
+        # Add label tensor to dataset
+        dataset = torch.utils.data.TensorDataset(X_tensor, ry_tensor, y_tensor, fy_tensor, label_tensor)
         dataloader = torch.utils.data.DataLoader(dataset, batch_size=self.batch_size, shuffle=self.shuffle)
 
         return dataloader
@@ -188,6 +197,7 @@ class AER(nn.Module):
         y = y.reshape(batch_size, x.shape[1], -1)
         latent = x_lat.detach().numpy()
         latent = latent.reshape(x_lat.shape[1], -1)
+        latent = x_lat.reshape(x_lat.shape[1], -1)
 
         return ry, y, fy, latent
 

@@ -86,6 +86,7 @@ def load_assign_network(args: Namespace, directory='networks/original/',
     used_nodes = set()
     previous_nodes = set()
     growth_tgt.insert(0, set())  # Insert dummy step 0 for consistent indexing
+    district_nodes[tgt_district]['assignments'].growth_nodes = growth_tgt
     consumption_patterns = {}
 
     # Iterate through each simulation step
@@ -109,7 +110,7 @@ def load_assign_network(args: Namespace, directory='networks/original/',
                 node_id=node,
                 income_level='high',
                 density_level='high',
-                seed=None
+                seed=23
             )
 
         # Update district label in the assignments

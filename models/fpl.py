@@ -31,6 +31,14 @@ def agg_func(protos):
         else:
             protos[label] = proto_list[0]
 
+    # for [label, proto_list] in protos.items():
+    #     if len(proto_list) > 1:
+    #         proto = torch.zeros_like(proto_list[0])
+    #         for i in proto_list:
+    #             proto += i
+    #         proto = proto / len(proto_list)
+    #     else:
+    #         protos[label] = proto_list[0]
     return protos
 
 
@@ -40,7 +48,7 @@ class FPL(FederatedModel):
 
     def __init__(self, nets_list, args, transform):
         super(FPL, self).__init__(nets_list, args, transform)
-        self.global_protos = []  # lista #classes prototipos globais
+        self.global_protos = {}  # lista #classes prototipos globais
         self.local_protos = {}  # dict #clientes : lista #classes prototipos locais
         self.clients_domains = None
         self.global_history = []  # comm_epoch : deepcopy(global_protos)
@@ -50,6 +58,7 @@ class FPL(FederatedModel):
         self.local_metrics_test = {idx: [] for idx in range(self.online_num)}
 
         self.infoNCET = args.infoNCET
+        self.device = 'cpu'
 
     def ini(self):
         self.global_net = copy.deepcopy(self.nets_list[0])
@@ -189,7 +198,7 @@ class FPL(FederatedModel):
         # mean_f_neg = mean_f_neg.view(9, -1)
 
         loss_mse = nn.MSELoss()
-        cu_info_loss = loss_mse(f_now, mean_f_pos)
+        cu_info_loss = loss_mse(f_now.squeeze(0), mean_f_pos)
 
         hierar_info_loss = xi_info_loss + cu_info_loss
         return hierar_info_loss
@@ -211,13 +220,13 @@ class FPL(FederatedModel):
         infonce_loss = -torch.log(sum_pos_l / sum_exp_l)
         return infonce_loss
 
-    def loc_update(self, priloader_list, testloader_list, mapped_indexes, epoch_index):
+    def loc_update(self, priloader_list, prilabel_list, mapped_indexes = None, epoch_index = None):
         total_clients = list(range(self.args.parti_num))
         online_clients = self.random_state.choice(total_clients,self.online_num,replace=False).tolist()
         self.online_clients = online_clients
 
         for i in online_clients:
-            self._train_net(i, self.nets_list[i], priloader_list[i])
+            self._train_net(i, self.nets_list[i], priloader_list[i], prilabel_list[i])
         self.global_protos = self.proto_aggregation(self.local_protos)
         self.aggregate_nets(None)
 
@@ -306,9 +315,9 @@ class FPL(FederatedModel):
         return client_metrics
 
 
-    def _train_net(self, index, model, train_loader, device="cpu", reg_ratio=0.5, verbose=True):
-        data_loader = model.prepare_data(train_loader)
-        model = model.to(device)
+    def _train_net(self, index, model, train_loader, label_loader, reg_ratio=0.5, verbose=True):
+        data_loader = model.prepare_data(X = train_loader, X_index = label_loader)
+        model = model.to(self.device)
         model.train()
         model.initialize_optimizer()  # initializes if not already done
         optimizer = model.optimizer
@@ -330,11 +339,13 @@ class FPL(FederatedModel):
         for iter in iterator:
             agg_protos_label = {}
             epoch_loss = 0
-            for xb, ryb, yb, fyb in data_loader:
-                xb = xb.to(device)
-                ryb = ryb.to(device)
-                yb = yb.to(device)
-                fyb = fyb.to(device)
+            epoch_loss_MSE = 0
+            epoch_loss_Info = 0
+            for xb, ryb, yb, fyb, labels in data_loader:
+                xb = xb.to(self.device)
+                ryb = ryb.to(self.device)
+                yb = yb.to(self.device)
+                fyb = fyb.to(self.device)
 
                 optimizer.zero_grad()
                 out_ry, out_y, out_fy, latent = model(xb)
@@ -343,47 +354,49 @@ class FPL(FederatedModel):
                 loss_y = criterion(out_y, yb)
                 loss_fy = criterion(out_fy, torch.squeeze(fyb))
 
-                loss = (reg_ratio / 2) * loss_ry + (1 - reg_ratio) * loss_y + (reg_ratio / 2) * loss_fy
-                # loss.backward()
-                # optimizer.step()
-
-                epoch_loss += loss.item()
+                loss_MSE = (reg_ratio / 2) * loss_ry + (1 - reg_ratio) * loss_y + (reg_ratio / 2) * loss_fy
+                epoch_loss_MSE += loss_MSE.item()
 
                 # print(images.shape, labels.shape, lossCE.shape, type(lossCE))
 
                 if len(self.global_protos) == 0:
-                    loss_InfoNCE = 0 #* lossCE
+                    loss_InfoNCE = torch.tensor(0.0, requires_grad=True)
+
                 else:
                     i = 0
                     loss_InfoNCE = None
 
                     for label in labels:
                         if label.item() in self.global_protos.keys():
-                            f_now = f[i].unsqueeze(0)
+                            f_now = latent[i].unsqueeze(0)
                             loss_instance = self.hierarchical_info_loss(f_now, label, all_f, mean_f,
                                                                         all_global_protos_keys)
 
                             if loss_InfoNCE is None:
-                                loss_InfoNCE = loss_instance
+                                loss_InfoNCE = loss_instance.item()
                             else:
-                                loss_InfoNCE += loss_instance
+                                loss_InfoNCE += loss_instance.item()
                         i += 1
                     loss_InfoNCE = loss_InfoNCE / i
-                loss_InfoNCE = loss_InfoNCE
 
-                print(loss_InfoNCE.shape, loss_InfoNCE, type(loss_InfoNCE))
 
-                loss = epoch_loss + loss_InfoNCE
+                loss = loss_MSE + loss_InfoNCE
+
+                epoch_loss_Info += loss_InfoNCE
+                epoch_loss += loss
+                iterator.desc = "Local Pariticipant %d MSE = %0.3f,InfoNCE = %0.3f" % (index, loss_MSE, loss_InfoNCE)
+
                 loss.backward()
-                iterator.desc = "Local Pariticipant %d CE = %0.3f,InfoNCE = %0.3f" % (index, lossCE, loss_InfoNCE)
                 optimizer.step()
 
                 if iter == self.local_epoch - 1:
                     for i in range(len(labels)):
                         if labels[i].item() in agg_protos_label:
-                            agg_protos_label[labels[i].item()].append(f[i, :])
+                            agg_protos_label[labels[i].item()].append(latent[i, :])
                         else:
-                            agg_protos_label[labels[i].item()] = [f[i, :]]
+                            agg_protos_label[labels[i].item()] = [latent[i, :]]
+
+            model.fit_history.append((epoch_loss, epoch_loss_MSE, epoch_loss_Info))
 
         agg_protos = agg_func(agg_protos_label)
 

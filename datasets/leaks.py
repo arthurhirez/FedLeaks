@@ -28,7 +28,8 @@ def initizalize_backbone(args: Namespace,
             'target_shape': [args.window_size, args.input_size],
             'lstm_units': args.lstm_units,
             'repeat_vector_n': args.window_size,
-            'n_outputs': args.input_size
+            'n_outputs': args.input_size,
+            'agg_interval': int(args.interval_agg / (60**2)),
             # 'initialize_model' : True,
         }
 
