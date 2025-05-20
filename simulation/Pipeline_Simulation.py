@@ -8,23 +8,23 @@ def parse_args():
     parser = argparse.ArgumentParser(description="Run water network simulation with specified parameters.")
 
     # Identification
-    parser.add_argument('--id_network', type=str, default='Graeme', help='Identifier for the water network model.')
+    parser.add_argument('--id_network', type=str, default='Balerma', help='Identifier for the water network model.')
     parser.add_argument('--id_exp', type=str, default='PIPELINE_PYTHON', help='Experiment identifier.')
 
     # Features drift
     parser.add_argument('--tgt_district', type=str, default='District_A', help='Target district name.')
-    parser.add_argument('--seed_node', type=str, default='106', help='Seed node for simulation.')  # 415
+    parser.add_argument('--seed_node', type=str, default='415', help='Seed node for simulation.')  # 415
     parser.add_argument('--income_density_mapping', type=dict,
                         default=
-                        [('low', 'low'),
-                                  ('low', 'low'),
-                                  ('low', 'high'),
-                                  ('medium', 'medium'),
-                                  ('high', 'low')],
-                        # [('low', 'medium'),
-                        #  ('low', 'low'),
-                        #  ('low', 'low')
-                        #  ],
+                        # [('low', 'low'),
+                        #           ('low', 'low'),
+                        #           ('low', 'high'),
+                        #           ('medium', 'medium'),
+                        #           ('high', 'low')],
+                        [('low', 'medium'),
+                         ('low', 'low'),
+                         ('low', 'low')
+                         ],
                         help='List of income:density category mappings. Format: income:density')
 
     # Time variables

@@ -1,3 +1,14 @@
+import numpy as np
+
+# Based on populational density, there will be different consumption patterns
+## The morning/afternoon/night consumption peaks will vary
+## [morning_peak, afternoon_peak, evening_peak, night_consumption, variation_strength]
+DISTRIBUTION_PATTERNS = {
+    'low': np.array([4.0, 1.0, 4.0, 0.2, 0.125]),
+    'medium': np.array([3.0, 1.7, 2.0, 0.5, 0.075]),
+    'high': np.array([1.0, 1.0, 1.0, 0.7, 0.010]),
+}
+
 MAPPING_SENSORS = {
     'Graeme': {
         'Pressure': {
@@ -14,10 +25,10 @@ MAPPING_SENSORS = {
             'Client_D': ['38', '96', '69'],
             'Client_E': ['59', '11', '19'],
         },
-        'Fixed' : ['79', '58', '24', '98', '75', '23', '27'],
-        'Skip' : ['114']
+        'Fixed': ['79', '58', '24', '98', '75', '23', '27'],
+        'Skip': ['114']
     },
-    'Balerma' : {
+    'Balerma': {
         'Pressure': {
             'Client_A': ['345', '187'],
             'Client_B': ['372', '106'],
@@ -31,7 +42,7 @@ MAPPING_SENSORS = {
         'Fixed': ['90', '13', '365', '268', '249', '38', '63'],
         'Skip': ['38', '43', '44', '88']
     },
-    'CTown' : {
+    'CTown': {
         'Pressure': {
             'Client_A': ['J67', 'J134'],
             'Client_B': ['J320', 'J190'],  # '93',

@@ -133,9 +133,11 @@ class AER(nn.Module):
 
         # Extract 12-hour format label from timestamps
         timestamps = pd.to_datetime(X_index, unit='s')
-        hour = timestamps.hour
-        label = hour.where(hour < 12, hour - 12).to_numpy()
-        label = label / self.agg_interval
+        # hour = timestamps.hour
+        # label = hour.where(hour < 12, hour - 12).to_numpy()
+        # label = label / self.agg_interval
+        month = timestamps.month - 1
+        label = month.to_numpy()
         label_tensor = torch.tensor(label, dtype=torch.int64)  # or float32 if needed
 
         # Prepare input and targets

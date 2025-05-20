@@ -7,13 +7,14 @@ import pickle
 from multiprocessing.managers import Namespace
 
 import pandas as pd
+import numpy as np
 import wntr
 from atmn import ScenarioCollection
 
 from utils.Districts import load_network_and_districts, combine_districts
 from utils.Tbx_Leaks import generate_random_leaks_for_all_pipes, get_target_sensors, create_config_xml
 from utils.Tbx_Simulation import generate_consumption_patterns, concatenate_consumption_patterns
-from utils.Tbx_Simulation import simulate_urban_growth
+from utils.Tbx_Simulation import simulate_urban_growth, smooth_drift_profile, shuffle_and_perturb_array
 
 from utils.configs import MAPPING_SENSORS
 
@@ -78,7 +79,7 @@ def load_assign_network(args: Namespace, directory='networks/original/',
             break
 
     # TODO: MELHORAR ESSA CEHCAGEM!
-    skip_set = set(MAPPING_SENSORS[args.id_network]['Fixed'])
+    skip_set = set(MAPPING_SENSORS[args.id_network]['Skip'])
     for s in growth_tgt:
         s.difference_update(skip_set)
 
@@ -88,6 +89,7 @@ def load_assign_network(args: Namespace, directory='networks/original/',
     growth_tgt.insert(0, set())  # Insert dummy step 0 for consistent indexing
     district_nodes[tgt_district]['assignments'].growth_nodes = growth_tgt
     consumption_patterns = {}
+    tgt_nodes = list(growth_tgt[-1])
 
     # Iterate through each simulation step
     for i, current_nodes in enumerate(growth_tgt):
@@ -110,7 +112,7 @@ def load_assign_network(args: Namespace, directory='networks/original/',
                 node_id=node,
                 income_level='high',
                 density_level='high',
-                seed=23
+                seed=None
             )
 
         # Update district label in the assignments
@@ -134,28 +136,44 @@ def load_assign_network(args: Namespace, directory='networks/original/',
 
         # Merge data from all districts to prepare for consumption modeling
         nodes_districts = []
+        aux_origin = []
         for name, district in district_nodes.items():
             aux_data = district['assignments'].data_buildings
             aux_data['district'] = name
             nodes_districts.append(aux_data)
+            aux_origin.append(district['assignments'].original_data_buildings)
 
         data_consumption = pd.concat(nodes_districts)
+        origin_data = pd.concat(aux_origin)
+
+        base_peaks = np.array([args.morning_peak, args.afternoon_peak, args.evening_peak, args.night_consumption])
+        noisy_peaks = shuffle_and_perturb_array(base_values=base_peaks,
+                                                scale=0.125,
+                                                min_val=0.25)
+
+        morning_peak_var, afternoon_peak_var, evening_peak_var, night_consumption_var = noisy_peaks
 
         # Generate consumption pattern for current simulation step
         generate_consumption_patterns(
             data_consumption=data_consumption,
+            original_state=origin_data,
             consumption_patterns=consumption_patterns,
             id_time=i,
-            epochs = args.epochs_lenght,
-            days = args.days_lenght,
-            n_intervals = args.n_intervals,
-            unit = args.unit,
-            morning_peak = args.morning_peak,
-            afternoon_peak = args.afternoon_peak,
-            evening_peak = args.evening_peak,
-            night_consumption = args.night_consumption,
-            variation_strength = 0.02
+            epochs=args.epochs_lenght,
+            days=args.days_lenght,
+            n_intervals=args.n_intervals,
+            unit=args.unit,
+            morning_peak=morning_peak_var,
+            afternoon_peak=afternoon_peak_var,
+            evening_peak=evening_peak_var,
+            night_consumption=night_consumption_var,
+            variation_strength=0.02
         )
+
+    # TODO MELHORAR KKKKK
+    district_nodes[tgt_district]['assignments'].data_buildings['drift_nodes'] = \
+        district_nodes[tgt_district]['assignments'].data_buildings['node_id'].isin(tgt_nodes).astype(int)
+    data_consumption['drift_nodes'] = data_consumption['node_id'].isin(tgt_nodes).astype(int)
 
     # Optionally save the final state of district assignments
     if save_assignments:
@@ -168,7 +186,7 @@ def load_assign_network(args: Namespace, directory='networks/original/',
 # -------- CREATE CONUSMPTION PATTERNS -------- #
 
 
-def run_scenarios(water_network : object, consumption_patterns : dict, data_consumption : pd.DataFrame, args: Namespace):
+def run_scenarios(water_network: object, consumption_patterns: dict, data_consumption: pd.DataFrame, args: Namespace):
     """
     Executes the full simulation pipeline for a water distribution network under various experimental conditions.
 
@@ -189,13 +207,20 @@ def run_scenarios(water_network : object, consumption_patterns : dict, data_cons
         dict: A dictionary of auto-generated leak scenarios for use in analysis and validation.
     """
 
-
     # Extract key identifiers
     id_network = args.id_network
     id_exp = args.id_exp
 
     # Merge all individual node consumption patterns into a full time series
     full_time_series = concatenate_consumption_patterns(consumption_patterns)
+
+    drift_nodes = data_consumption[data_consumption['drift_nodes'] == 1]['node_id'].tolist()
+
+    for node in drift_nodes:
+        full_time_series[node]['full_series'] = smooth_drift_profile(ts=full_time_series[node]['full_series'],
+                                                                     smooth_span=2000,
+                                                                     method='log',
+                                                                     figsize=None)
 
     # Assign each node in the network a demand pattern based on the generated time series
     for node in data_consumption['node_id']:
@@ -249,7 +274,6 @@ def run_scenarios(water_network : object, consumption_patterns : dict, data_cons
         save_dict_path=f'my_collection/{path_exp}.pkl'
     )
 
-
     pressure_list = [item for sublist in MAPPING_SENSORS[args.id_network]['Pressure'].values() for item in sublist]
     flow_list = [item for sublist in MAPPING_SENSORS[args.id_network]['Flow'].values() for item in sublist]
     fixed_cases_network = MAPPING_SENSORS[args.id_network]['Fixed']
@@ -280,14 +304,14 @@ def run_scenarios(water_network : object, consumption_patterns : dict, data_cons
         demand_sensors=combined_pressure,
     )
 
-    # # Clean previous simulation results if the directory exists
-    # dir_path = f"my_collection/{path_exp}_Random_Multiple"
-    # if os.path.exists(dir_path) and os.path.isdir(dir_path):
-    #     print(f"Directory exists: {dir_path} — deleting...")
-    #     shutil.rmtree(dir_path)
-    #     print("Directory deleted.")
-    # else:
-    #     print(f"Directory does not exist: {dir_path}")
+    # Clean previous simulation results if the directory exists
+    dir_path = f"my_collection/{path_exp}_Random_Multiple"
+    if os.path.exists(dir_path) and os.path.isdir(dir_path):
+        print(f"Directory exists: {dir_path} — deleting...")
+        shutil.rmtree(dir_path)
+        print("Directory deleted.")
+    else:
+        print(f"Directory does not exist: {dir_path}")
 
     # Trigger scenario generation using external tool
     try:
@@ -301,7 +325,7 @@ def run_scenarios(water_network : object, consumption_patterns : dict, data_cons
 
 # -------- COMPILE RESULTS -------- #
 
-def compile_results(leaks_scenarios : dict, args: Namespace):
+def compile_results(leaks_scenarios: dict, args: Namespace):
     """
     Compiles simulation results after running scenarios on a water distribution network.
 
@@ -320,84 +344,134 @@ def compile_results(leaks_scenarios : dict, args: Namespace):
         None. Writes processed leak scenario data and sensor time series to disk.
     """
 
-    id_network = args.id_network
+    # Load generated scenarios using the ScenarioCollection class
+    my_collection = ScenarioCollection('my_collection')
+    my_scenario = my_collection.get_scenario(f"{args.id_network}_{args.id_exp}_Random_Multiple")
 
-    id_case = f'{id_network}_'
+    scenarios_aux = []
 
-    # Identify relevant folders from the scenario output directory
-    folders = [
-        f.replace('my_collection\\', '') for f in glob.glob(f'my_collection/*{id_case}*')
-        if os.path.isdir(f)
-    ]
+    # Process each scenario from the auto_leak dictionary
+    for scenario, cases in leaks_scenarios.items():
+        df_aux = pd.DataFrame(cases)
+        df_aux['scenario'] = scenario
 
-    for case in folders:
-        # Load generated scenarios using the ScenarioCollection class
-        my_collection = ScenarioCollection('my_collection')
-        my_scenario = my_collection.get_scenario(case)
+        # Convert time values from hours to seconds and ensure integer format
+        for time in ['start', 'end', 'peak']:
+            df_aux[time] = df_aux[time] * 3600
+            df_aux[time] = df_aux[time].astype('Int64')
 
-        scenarios_aux = []
+        scenarios_aux.append(df_aux)
 
-        # Process each scenario from the auto_leak dictionary
-        for scenario, cases in leaks_scenarios.items():
-            df_aux = pd.DataFrame(cases)
-            df_aux['scenario'] = scenario
+    # Concatenate and save scenario metadata
+    df_scenarios = pd.concat(scenarios_aux)
 
-            # Convert time values from hours to seconds and ensure integer format
-            for time in ['start', 'end', 'peak']:
-                df_aux[time] = df_aux[time] * 3600
-                df_aux[time] = df_aux[time].astype('Int64')
+    save_path = f'../data_leaks/{args.id_network}/{args.id_exp}'
+    if not os.path.exists(save_path):
+        os.makedirs(save_path)
 
-            scenarios_aux.append(df_aux)
+    df_scenarios.to_csv(f'{save_path}/scenarios.csv',
+                        index=False)
 
-        # Concatenate and save scenario metadata
-        df_scenarios = pd.concat(scenarios_aux)
+    # Loop through each relevant feature: Flow, Demand, Pressure
+    for feature in ['Flow', 'Demand', 'Pressure']:
+        leak_configs = my_scenario.list_configs()['LeakConfigs']
 
-        save_path = f'../data_leaks/{id_network}/{args.id_exp}'
-        if not os.path.exists(save_path):
-            os.makedirs(save_path)
+        aux_data = []  # Melted data for plotting
+        aux_data_leak = []  # Raw leak time series
 
-        df_scenarios.to_csv(f'{save_path}/scenarios.csv',
-                            index=False)
+        var_id = 'pipeId' if feature.lower() == 'flow' else 'node'
 
-        # Loop through each relevant feature: Flow, Demand, Pressure
-        for feature in ['Flow', 'Demand', 'Pressure']:
-            leak_configs = my_scenario.list_configs()['LeakConfigs']
+        # Process each leak scenario for this feature
+        for leak_scenario in leak_configs:
+            data_scenario = my_scenario.get(leak_scenario, 'DefaultSensors', 'GT')
+            df_feat = data_scenario[feature.lower()].copy()
 
-            aux_data = []  # Melted data for plotting
-            aux_data_leak = []  # Raw leak time series
+            # Ensure clean numeric formatting
+            for c in df_feat.columns:
+                df_feat[c] = df_feat[c].astype(float).round(6)
 
-            var_id = 'pipeId' if feature.lower() == 'flow' else 'node'
+            aux_leak = df_feat.copy()
+            df_feat['time'] = pd.to_datetime(df_feat.index, unit='s')
 
-            # Process each leak scenario for this feature
-            for leak_scenario in leak_configs:
-                data_scenario = my_scenario.get(leak_scenario, 'DefaultSensors', 'GT')
-                df_feat = data_scenario[feature.lower()].copy()
+            # Reshape for long-format plotting or time-series analysis
+            df_feat_melted = df_feat.melt(
+                ignore_index=False,
+                var_name=var_id,
+                value_name=feature
+            ).reset_index()
 
-                # Ensure clean numeric formatting
-                for c in df_feat.columns:
-                    df_feat[c] = df_feat[c].astype(float).round(6)
+            df_feat_melted = df_feat_melted.rename(columns={'time': 'Time'})
+            df_feat_melted['scenario'] = leak_scenario
 
-                aux_leak = df_feat.copy()
-                df_feat['time'] = pd.to_datetime(df_feat.index, unit='s')
+            aux_data.append(df_feat_melted)
+            aux_leak['scenario'] = leak_scenario
+            aux_data_leak.append(aux_leak)
 
-                # Reshape for long-format plotting or time-series analysis
-                df_feat_melted = df_feat.melt(
-                    ignore_index=False,
-                    var_name=var_id,
-                    value_name=feature
-                ).reset_index()
+        # Save full leak time series and melted DataFrame
+        df_leak = pd.concat(aux_data_leak).reset_index()
+        df_leak = df_leak.rename(columns={'time': 'timestamp'})
 
-                df_feat_melted = df_feat_melted.rename(columns={'time': 'Time'})
-                df_feat_melted['scenario'] = leak_scenario
+        df_leak.to_csv(f'{save_path}/{feature}.csv',
+                       index=False)
 
-                aux_data.append(df_feat_melted)
-                aux_leak['scenario'] = leak_scenario
-                aux_data_leak.append(aux_leak)
 
-            # Save full leak time series and melted DataFrame
-            df_leak = pd.concat(aux_data_leak).reset_index()
-            df_leak = df_leak.rename(columns={'time': 'timestamp'})
 
-            df_leak.to_csv(f'{save_path}/{feature}.csv',
-                           index=False)
 
+#
+# import pickle
+# from multiprocessing.managers import Namespace
+#
+# import pandas as pd
+# import numpy as np
+# import wntr
+# from atmn import ScenarioCollection
+#
+# for case in folders:
+#     # Load generated scenarios using the ScenarioCollection class
+#     my_collection = ScenarioCollection('my_collection')
+#     my_scenario = my_collection.get_scenario(case)
+#
+#     save_path = f'../data_leaks/{args.id_network}/{case.replace("Graeme_", "").replace("_Random_Multiple", "")}'
+#     if not os.path.exists(save_path):
+#         os.makedirs(save_path)
+#
+#     for feature in ['Flow', 'Demand', 'Pressure']:
+#         leak_configs = my_scenario.list_configs()['LeakConfigs']
+#
+#         aux_data = []  # Melted data for plotting
+#         aux_data_leak = []  # Raw leak time series
+#
+#         var_id = 'pipeId' if feature.lower() == 'flow' else 'node'
+#
+#         # Process each leak scenario for this feature
+#         for leak_scenario in leak_configs:
+#             data_scenario = my_scenario.get(leak_scenario, 'DefaultSensors', 'GT')
+#             df_feat = data_scenario[feature.lower()].copy()
+#
+#             # Ensure clean numeric formatting
+#             for c in df_feat.columns:
+#                 df_feat[c] = df_feat[c].astype(float).round(6)
+#
+#             aux_leak = df_feat.copy()
+#             df_feat['time'] = pd.to_datetime(df_feat.index, unit='s')
+#
+#             # Reshape for long-format plotting or time-series analysis
+#             df_feat_melted = df_feat.melt(
+#                 ignore_index=False,
+#                 var_name=var_id,
+#                 value_name=feature
+#             ).reset_index()
+#
+#             df_feat_melted = df_feat_melted.rename(columns={'time': 'Time'})
+#             df_feat_melted['scenario'] = leak_scenario
+#
+#             aux_data.append(df_feat_melted)
+#             aux_leak['scenario'] = leak_scenario
+#             aux_data_leak.append(aux_leak)
+#
+#         # Save full leak time series and melted DataFrame
+#         df_leak = pd.concat(aux_data_leak).reset_index()
+#         df_leak = df_leak.rename(columns={'time': 'timestamp'})
+#
+#         df_leak.to_csv(f'{save_path}/{feature}.csv',
+#                        index=False)

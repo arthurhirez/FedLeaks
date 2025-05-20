@@ -7,13 +7,14 @@ import pickle
 from multiprocessing.managers import Namespace
 
 import pandas as pd
+import numpy as np
 import wntr
 from atmn import ScenarioCollection
 
 from utils.Districts import load_network_and_districts, combine_districts
 from utils.Tbx_Leaks import generate_random_leaks_for_all_pipes, get_target_sensors, create_config_xml
 from utils.Tbx_Simulation import generate_consumption_patterns, concatenate_consumption_patterns
-from utils.Tbx_Simulation import simulate_urban_growth
+from utils.Tbx_Simulation import simulate_urban_growth, smooth_drift_profile, shuffle_and_perturb_array
 
 from utils.configs import MAPPING_SENSORS
 
@@ -78,7 +79,7 @@ def load_assign_network(args: Namespace, directory='networks/original/',
             break
 
     # TODO: MELHORAR ESSA CEHCAGEM!
-    skip_set = set(MAPPING_SENSORS[args.id_network]['Fixed'])
+    skip_set = set(MAPPING_SENSORS[args.id_network]['Skip'])
     for s in growth_tgt:
         s.difference_update(skip_set)
 
@@ -86,7 +87,9 @@ def load_assign_network(args: Namespace, directory='networks/original/',
     used_nodes = set()
     previous_nodes = set()
     growth_tgt.insert(0, set())  # Insert dummy step 0 for consistent indexing
+    district_nodes[tgt_district]['assignments'].growth_nodes = growth_tgt
     consumption_patterns = {}
+    tgt_nodes = list(growth_tgt[-1])
 
     # Iterate through each simulation step
     for i, current_nodes in enumerate(growth_tgt):
@@ -133,28 +136,43 @@ def load_assign_network(args: Namespace, directory='networks/original/',
 
         # Merge data from all districts to prepare for consumption modeling
         nodes_districts = []
+        aux_origin = []
         for name, district in district_nodes.items():
             aux_data = district['assignments'].data_buildings
             aux_data['district'] = name
             nodes_districts.append(aux_data)
+            aux_origin.append(district['assignments'].original_data_buildings)
 
         data_consumption = pd.concat(nodes_districts)
+        origin_data = pd.concat(aux_origin)
+
+        base_peaks = np.array([args.morning_peak, args.afternoon_peak, args.evening_peak, args.night_consumption])
+        noisy_peaks = shuffle_and_perturb_array(base_values=base_peaks,
+                                             scale=0.125,
+                                             min_val=0.25)
+
+        morning_peak_var, afternoon_peak_var, evening_peak_var, night_consumption_var = noisy_peaks
 
         # Generate consumption pattern for current simulation step
         generate_consumption_patterns(
             data_consumption=data_consumption,
+            original_state=origin_data,
             consumption_patterns=consumption_patterns,
             id_time=i,
-            epochs = args.epochs_lenght,
-            days = args.days_lenght,
-            n_intervals = args.n_intervals,
-            unit = args.unit,
-            morning_peak = args.morning_peak,
-            afternoon_peak = args.afternoon_peak,
-            evening_peak = args.evening_peak,
-            night_consumption = args.night_consumption,
-            variation_strength = 0.02
+            epochs=args.epochs_lenght,
+            days=args.days_lenght,
+            n_intervals=args.n_intervals,
+            unit=args.unit,
+            morning_peak=morning_peak_var,
+            afternoon_peak=afternoon_peak_var,
+            evening_peak=evening_peak_var,
+            night_consumption=night_consumption_var,
+            variation_strength=0.02
         )
+    # TODO MELHORAR KKKKK
+    district_nodes[tgt_district]['assignments'].data_buildings['drift_nodes'] = \
+    district_nodes[tgt_district]['assignments'].data_buildings['node_id'].isin(tgt_nodes).astype(int)
+    data_consumption['drift_nodes'] = data_consumption['node_id'].isin(tgt_nodes).astype(int)
 
     # Optionally save the final state of district assignments
     if save_assignments:
@@ -167,7 +185,7 @@ def load_assign_network(args: Namespace, directory='networks/original/',
 # -------- CREATE CONUSMPTION PATTERNS -------- #
 
 
-def run_scenarios(water_network : object, consumption_patterns : dict, data_consumption : pd.DataFrame, args: Namespace):
+def run_scenarios(water_network: object, consumption_patterns: dict, data_consumption: pd.DataFrame, args: Namespace):
     """
     Executes the full simulation pipeline for a water distribution network under various experimental conditions.
 
@@ -188,13 +206,20 @@ def run_scenarios(water_network : object, consumption_patterns : dict, data_cons
         dict: A dictionary of auto-generated leak scenarios for use in analysis and validation.
     """
 
-
     # Extract key identifiers
     id_network = args.id_network
     id_exp = args.id_exp
 
     # Merge all individual node consumption patterns into a full time series
     full_time_series = concatenate_consumption_patterns(consumption_patterns)
+
+    drift_nodes = data_consumption[data_consumption['drift_nodes'] == 1]['node_id'].tolist()
+
+    for node in drift_nodes:
+        full_time_series[node]['full_series'] = smooth_drift_profile(ts=full_time_series[node]['full_series'],
+                                                                     smooth_span=2000,
+                                                                     method='log',
+                                                                     figsize=None)
 
     # Assign each node in the network a demand pattern based on the generated time series
     for node in data_consumption['node_id']:
@@ -248,7 +273,6 @@ def run_scenarios(water_network : object, consumption_patterns : dict, data_cons
         save_dict_path=f'my_collection/{path_exp}.pkl'
     )
 
-
     pressure_list = [item for sublist in MAPPING_SENSORS[args.id_network]['Pressure'].values() for item in sublist]
     flow_list = [item for sublist in MAPPING_SENSORS[args.id_network]['Flow'].values() for item in sublist]
     fixed_cases_network = MAPPING_SENSORS[args.id_network]['Fixed']
@@ -300,7 +324,7 @@ def run_scenarios(water_network : object, consumption_patterns : dict, data_cons
 
 # -------- COMPILE RESULTS -------- #
 
-def compile_results(leaks_scenarios : dict, args: Namespace):
+def compile_results(leaks_scenarios: dict, args: Namespace):
     """
     Compiles simulation results after running scenarios on a water distribution network.
 
@@ -399,4 +423,3 @@ def compile_results(leaks_scenarios : dict, args: Namespace):
 
             df_leak.to_csv(f'{save_path}/{feature}.csv',
                            index=False)
-
