@@ -2,14 +2,16 @@ import os
 import argparse
 
 from utils.Tbx_Pipeline import load_assign_network, run_scenarios, compile_results
-
+from utils.Tbx_Simulation import district_visualization
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Run water network simulation with specified parameters.")
 
     # Identification
     parser.add_argument('--id_network', type=str, default='Graeme', help='Identifier for the water network model.')
-    parser.add_argument('--id_exp', type=str, default='PIPELINE_PYTHON', help='Experiment identifier.')
+    parser.add_argument('--id_exp', type=str, default='PIPELINE_PATTERNS_REFACTOR', help='Experiment identifier.')
+    parser.add_argument('--generate_viz', type=bool, default=True, help='Creates and saves interactive visualizations')
+    parser.add_argument('--callable', type=bool, default=False)
 
     # Features drift
     parser.add_argument('--tgt_district', type=str, default='District_A', help='Target district name.')
@@ -17,10 +19,10 @@ def parse_args():
     parser.add_argument('--income_density_mapping', type=dict,
                         default=
                         [('low', 'low'),
-                                  ('low', 'low'),
-                                  ('low', 'high'),
-                                  ('medium', 'medium'),
-                                  ('high', 'low')],
+                         ('low', 'low'),
+                         ('low', 'high'),
+                         ('medium', 'medium'),
+                         ('high', 'low')],
                         # [('low', 'medium'),
                         #  ('low', 'low'),
                         #  ('low', 'low')
@@ -28,7 +30,7 @@ def parse_args():
                         help='List of income:density category mappings. Format: income:density')
 
     # Time variables
-    parser.add_argument('--n_segments', type=int, default=7, help='Number of urban growth simulation segments.')
+    parser.add_argument('--n_segments', type=int, default=12, help='Number of urban growth simulation segments.')
     parser.add_argument('--epochs_lenght', type=int, default=6, help='Number of epochs per simulation run.')
     parser.add_argument('--days_lenght', type=int, default=5, help='Number of days in each epoch.')
     parser.add_argument('--n_intervals', type=int, default=24, help='Number of time intervals per day.')
@@ -57,7 +59,7 @@ def main():
     wn, consumption_patterns, data_consumption = load_assign_network(
         directory='networks\\original\\',
         save_assignments=True,
-        verbose=True,
+        verbose=False,
         args=args
     )
 
@@ -75,6 +77,12 @@ def main():
         args=args
     )
 
+    if args.generate_viz:
+        print("Generating visualization...")
+        district_visualization(id_network = args.id_network,
+                               id_exp = args.id_exp,
+                               save_path='../results/imgs')
+        print("Done. See results in 'results/imgs'")
 
 if __name__ == "__main__":
     main()

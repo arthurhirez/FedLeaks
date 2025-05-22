@@ -6,7 +6,7 @@ import numpy as np
 DISTRIBUTION_PATTERNS = {
     'low': np.array([4.0, 1.0, 4.0, 0.2, 0.125]),
     'medium': np.array([3.0, 1.7, 2.0, 0.5, 0.075]),
-    'high': np.array([1.0, 1.0, 1.0, 0.7, 0.010]),
+    'high': np.array([0.8, 0.8, 1.2, 0.3, 0.010]),
 }
 
 MAPPING_SENSORS = {

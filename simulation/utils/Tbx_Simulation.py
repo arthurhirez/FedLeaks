@@ -7,6 +7,13 @@ import matplotlib.pyplot as plt
 import networkx as nx
 import numpy as np
 
+import os
+import pickle
+import wntr
+import pandas as pd
+import altair as alt
+from sklearn.preprocessing import MinMaxScaler
+
 from utils.configs import DISTRIBUTION_PATTERNS
 
 alt.data_transformers.enable("vegafusion")
@@ -136,7 +143,7 @@ def generate_consumption_patterns(data_consumption,
                                                         scale=0.125,
                                                         min_val=0.2)
             elif density == 'medium':
-                if random.random() < 0.80:
+                if random.random() < 0.25:
                     noisy_peaks = add_noise_with_lower_bound(base_values=base_peaks,
                                                              scale=0.075,
                                                              min_val=0.5)
@@ -145,7 +152,14 @@ def generate_consumption_patterns(data_consumption,
                                                             scale=0.05,
                                                             min_val=0.5)
             else:
-                noisy_peaks = base_peaks
+                if random.random() < 0.40:
+                    noisy_peaks = add_noise_with_lower_bound(base_values=base_peaks,
+                                                             scale=0.035,
+                                                             min_val=0.125)
+                else:
+                    noisy_peaks = shuffle_and_perturb_array(base_values=base_peaks,
+                                                            scale=0.035,
+                                                            min_val=0.125)
 
             morning_peak_var, afternoon_peak_var, evening_peak_var, night_consumption_var = noisy_peaks
 
@@ -586,3 +600,158 @@ def smooth_epoch_transitions(data_consumption, transition_days=2,
         plot_smoothing_comparison(original, data_consumption, transition_days, node_id)
 
     return data_consumption
+
+
+def district_visualization(id_network, id_exp, save_path='../results/imgs'):
+    # Load WaterNetworkModel
+    wn = wntr.network.WaterNetworkModel(f'networks/{id_network}_{id_exp}.inp')
+
+    # Load district node assignments
+    with open(f'networks/assignments/{id_network}_{id_exp}_District_A_final.pkl', 'rb') as file:
+        district_nodes = pickle.load(file)
+
+    # Extract consumption data
+    records = []
+    for district_name, district_data in district_nodes.items():
+        data_buildings = district_data['assignments'].data_buildings
+        for node in data_buildings['node_id']:
+            junction = wn.get_node(node)
+            base_demand = convert_flow_rate(junction.base_demand, 'l/s')['m3/month']
+            pattern = wn.get_pattern(junction.demand_timeseries_list[0].pattern_name).multipliers
+            consumption = base_demand * pattern
+            for t, value in enumerate(consumption):
+                records.append({
+                    'district': district_name,
+                    'node': node,
+                    'time': t,
+                    'base_demand': base_demand,
+                    'pattern_value': pattern[t],
+                    'consumption': value
+                })
+
+    df = pd.DataFrame(records)
+    df['day'] = df['time'] // 24
+    df['hour'] = df['time'] % 24
+
+    # Altair selections
+    district_selection = alt.selection_point(
+        fields=['district'],
+        bind=alt.binding_select(options=sorted(df['district'].unique()), name="Select District: "),
+        value=sorted(df['district'].unique())[0]
+    )
+
+    node_selection = alt.selection_point(fields=['node'])
+
+    day_interval = alt.selection_interval(encodings=['x'], value={'x': (0, 29)}, name="Select Day Range")
+
+    # Node density info
+    aux_feats = []
+    for district_data in district_nodes.values():
+        data_buildings = district_data['assignments'].data_buildings
+        aux_feats.append(data_buildings[['node_id', 'density']])
+    node_feats = pd.concat(aux_feats).rename(columns={'node_id': 'node'})
+
+    df_agg = df.groupby(['district', 'day', 'node'], as_index=False).agg(consumption=('consumption', 'sum'))
+    df_agg = df_agg.merge(node_feats, on='node', how='left')
+    df_total = df.groupby(['district', 'day'], as_index=False).agg(total=('consumption', 'sum'))
+
+    # Area plot layers
+    background = alt.Chart(df_agg).mark_area(opacity=0.1).encode(
+        x='day:Q',
+        y=alt.Y('consumption:Q', stack='zero'),
+        color=alt.value('lightgray'),
+        tooltip=['node', 'day', 'consumption', 'density'],
+        opacity=alt.condition(node_selection, alt.value(1), alt.value(0.2))
+    ).add_params(district_selection, node_selection, day_interval).transform_filter(district_selection)
+
+    selected = alt.Chart(df_agg).mark_area(opacity=0.6).encode(
+        x='day:Q',
+        y=alt.Y('consumption:Q', stack='zero'),
+        color=alt.Color('node:N', scale=alt.Scale(scheme='category20b')),
+        tooltip=['node', 'day', 'consumption', 'density'],
+        opacity=alt.condition(node_selection, alt.value(1), alt.value(0.4))
+    ).transform_filter(district_selection).transform_filter(day_interval)
+
+    # Line overlays
+    line_background = alt.Chart(df_total).mark_line(color='lightgray', strokeWidth=2).encode(
+        x='day:Q', y='total:Q', tooltip=['day', 'total']
+    ).transform_filter(district_selection)
+
+    line_selected = alt.Chart(df_total).mark_line(color='black', strokeWidth=4).encode(
+        x='day:Q', y='total:Q', tooltip=['day', 'total']
+    ).transform_filter(district_selection).transform_filter(day_interval)
+
+    daily_plot = (background + selected + line_background + line_selected).properties(
+        width=400,
+        height=300,
+        title="Daily Consumption Patterns by Node and District"
+    )
+
+    # Ridge plot
+    def get_top_nodes(df, top_n=30):
+        top_nodes_df = (
+            df.groupby(['district', 'node'])['consumption'].sum()
+            .reset_index()
+            .sort_values(['district', 'consumption'], ascending=[True, False])
+        )
+        top_nodes_df['rank'] = top_nodes_df.groupby('district')['consumption'].rank(method='first', ascending=False)
+        return top_nodes_df[top_nodes_df['rank'] <= top_n][['district', 'node']]
+
+    top_nodes_df = get_top_nodes(df)
+    df_filtered = df.merge(top_nodes_df, on=['district', 'node'])
+    df_filtered = df_filtered.merge(node_feats, on='node', how='left')
+    hourly_mean = df_filtered.groupby(['district', 'node', 'hour'], as_index=False)['consumption'].mean()
+
+    def minmax_scale(group):
+        scaler = MinMaxScaler(feature_range=(0.5, 1.0))
+        scaled_values = scaler.fit_transform(group[['consumption']])
+        group['consumption_scaled'] = scaled_values
+        return group
+
+    hourly_scaled = hourly_mean.groupby(['district', 'node']).apply(minmax_scale, include_groups=False).reset_index()
+
+    # Ridge chart
+    step = 15
+    overlap = .5
+    ridge_chart = alt.Chart(df_filtered, height=step).transform_filter(
+        district_selection
+    ).transform_filter(
+        day_interval
+    ).transform_aggregate(
+        mean_consumption='mean(consumption)',
+        groupby=['node', 'density', 'hour']
+    ).transform_window(
+        min_val='min(mean_consumption)',
+        max_val='max(mean_consumption)',
+        groupby=['node']
+    ).transform_calculate(
+        consumption_scaled="0.5 + 0.5 * (datum.mean_consumption - datum.min_val) / (datum.max_val - datum.min_val + 1e-8)"
+    ).mark_area(
+        interpolate='monotone',
+        fillOpacity=0.75,
+        stroke='lightgray',
+        strokeWidth=0.25
+    ).encode(
+        x=alt.X('hour:Q', title='Hour of Day', scale=alt.Scale(domain=[0, 23])),
+        y=alt.Y('consumption_scaled:Q', axis=None, scale=alt.Scale(range=[step, -step * overlap])),
+        fill=alt.condition(
+            node_selection,
+            alt.Color('node:N', scale=alt.Scale(scheme='category20b'), legend=None),
+            alt.value('gray')
+        ),
+        tooltip=['node', 'density']
+    ).facet(
+        row=alt.Row('node:N').title(None).header(labelAngle=0, labelAlign='left'),
+        spacing=5
+    ).add_params(node_selection).properties(
+        title='Scaled Hourly Consumption Profile per Node by District',
+        bounds='flush'
+    ).resolve_scale(y='independent')
+
+    final_chart = daily_plot | ridge_chart
+
+    os.makedirs(save_path, exist_ok=True)
+    file_path = os.path.join(save_path, f'Consumption_{id_exp}.html')
+    final_chart.save(file_path)
+
+    return final_chart

@@ -110,8 +110,8 @@ def load_assign_network(args: Namespace, directory='networks/original/',
             # TODO: include income/density change in args
             district_nodes[tgt_district]['assignments'].edit_node(
                 node_id=node,
-                income_level='high',
-                density_level='high',
+                income_level='medium',
+                density_level='medium',
                 seed=None
             )
 
@@ -345,7 +345,8 @@ def compile_results(leaks_scenarios: dict, args: Namespace):
     """
 
     # Load generated scenarios using the ScenarioCollection class
-    my_collection = ScenarioCollection('my_collection')
+    # aux_directory = 'simulation/'if args.callable else ''
+    my_collection = ScenarioCollection(f'my_collection')
     my_scenario = my_collection.get_scenario(f"{args.id_network}_{args.id_exp}_Random_Multiple")
 
     scenarios_aux = []
@@ -353,6 +354,7 @@ def compile_results(leaks_scenarios: dict, args: Namespace):
     # Process each scenario from the auto_leak dictionary
     for scenario, cases in leaks_scenarios.items():
         df_aux = pd.DataFrame(cases)
+        df_aux = df_aux.fillna(-1)
         df_aux['scenario'] = scenario
 
         # Convert time values from hours to seconds and ensure integer format

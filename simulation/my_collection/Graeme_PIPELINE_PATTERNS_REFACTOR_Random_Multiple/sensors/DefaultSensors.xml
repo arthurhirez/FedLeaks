@@ -1,0 +1,104 @@
+<?xml version='1.0' encoding='ASCII'?>
+<SensorConfig name="DefaultSensors">
+                <PressureSensors>
+                    <Sensor id="23"/>
+                    <Sensor id="103"/>
+                    <Sensor id="64"/>
+                    <Sensor id="98"/>
+                    <Sensor id="84"/>
+                    <Sensor id="31"/>
+                    <Sensor id="83"/>
+                    <Sensor id="102"/>
+                    <Sensor id="86"/>
+                    <Sensor id="66"/>
+                    <Sensor id="68"/>
+                    <Sensor id="67"/>
+                    <Sensor id="60"/>
+                    <Sensor id="82"/>
+                    <Sensor id="58"/>
+                    <Sensor id="87"/>
+                    <Sensor id="80"/>
+                    <Sensor id="46"/>
+                    <Sensor id="59"/>
+                    <Sensor id="104"/>
+                    <Sensor id="12"/>
+                    <Sensor id="24"/>
+                    <Sensor id="74"/>
+                    <Sensor id="110"/>
+                    <Sensor id="79"/>
+                    <Sensor id="77"/>
+                    <Sensor id="27"/>
+                    <Sensor id="76"/>
+                    <Sensor id="69"/>
+                    <Sensor id="105"/>
+                    <Sensor id="75"/>
+                    <Sensor id="57"/>
+                    <Sensor id="90"/>
+                    <Sensor id="26"/>
+                    <Sensor id="78"/>
+                    <Sensor id="81"/>
+                    <Sensor id="41"/>
+                </PressureSensors>
+                <FlowSensors>
+                    <Sensor id="59"/>
+                    <Sensor id="91"/>
+                    <Sensor id="112"/>
+                    <Sensor id="165"/>
+                    <Sensor id="110"/>
+                    <Sensor id="119"/>
+                    <Sensor id="38"/>
+                    <Sensor id="138"/>
+                    <Sensor id="19"/>
+                    <Sensor id="69"/>
+                    <Sensor id="85"/>
+                    <Sensor id="96"/>
+                    <Sensor id="135"/>
+                    <Sensor id="100"/>
+                    <Sensor id="11"/>
+                    <Sensor id="102"/>
+                    <Sensor id="157"/>
+                    <Sensor id="95"/>
+                    <Sensor id="155"/>
+                    <Sensor id="133"/>
+                </FlowSensors>
+                <DemandSensors>
+                    <Sensor id="23"/>
+                    <Sensor id="103"/>
+                    <Sensor id="64"/>
+                    <Sensor id="98"/>
+                    <Sensor id="84"/>
+                    <Sensor id="31"/>
+                    <Sensor id="83"/>
+                    <Sensor id="102"/>
+                    <Sensor id="86"/>
+                    <Sensor id="66"/>
+                    <Sensor id="68"/>
+                    <Sensor id="67"/>
+                    <Sensor id="60"/>
+                    <Sensor id="82"/>
+                    <Sensor id="58"/>
+                    <Sensor id="87"/>
+                    <Sensor id="80"/>
+                    <Sensor id="46"/>
+                    <Sensor id="59"/>
+                    <Sensor id="104"/>
+                    <Sensor id="12"/>
+                    <Sensor id="24"/>
+                    <Sensor id="74"/>
+                    <Sensor id="110"/>
+                    <Sensor id="79"/>
+                    <Sensor id="77"/>
+                    <Sensor id="27"/>
+                    <Sensor id="76"/>
+                    <Sensor id="69"/>
+                    <Sensor id="105"/>
+                    <Sensor id="75"/>
+                    <Sensor id="57"/>
+                    <Sensor id="90"/>
+                    <Sensor id="26"/>
+                    <Sensor id="78"/>
+                    <Sensor id="81"/>
+                    <Sensor id="41"/>
+                </DemandSensors>
+            </SensorConfig>
+        

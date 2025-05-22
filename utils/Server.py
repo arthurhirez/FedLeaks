@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 from argparse import Namespace
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
-
+from tqdm import tqdm
 from datasets.utils import FederatedDataset
 from models.utils.federated_model import FederatedModel
 from utils.timeseries_detection import find_anomalies
@@ -21,26 +21,27 @@ def train(model: FederatedModel, private_dataset: FederatedDataset, scenario: st
         private_train_labels.append(loader['X_index'])
 
     model.trainloaders = private_train_loaders  # TODO REVER ISSO!!!
-
+    model.trainlabels = loader['X_index']
+    
     if hasattr(model, 'ini'):
         model.ini()
 
     latent_history = []
 
-    Epoch = args.communication_epoch
-    for epoch_index in range(Epoch):
+
+    iterator = tqdm(range(args.communication_epoch))
+    for epoch_index in iterator:
         model.epoch_index = epoch_index
         if hasattr(model, 'loc_update'):
             epoch_loc_loss_dict = model.loc_update(priloader_list = private_train_loaders,
                                                    prilabel_list = private_train_labels)
 
         print(10 * '**--')
-        print('SEM AGREGAÇÃO')
-
         aux_latent = local_evaluate(model=model,
                                     train_dl=priv_train_loaders,
                                     private_dataset=private_dataset,
-                                    group_detections=False)
+                                    group_detections=False,
+                                   detect_anomalies = args.detect_anomalies)
 
         latent_history.append(aux_latent)
 
@@ -55,7 +56,8 @@ def train(model: FederatedModel, private_dataset: FederatedDataset, scenario: st
 def local_evaluate(model: FederatedModel,
                    train_dl: list[dict],
                    private_dataset: FederatedDataset,
-                   group_detections: bool = False) -> list:
+                   group_detections: bool = False,
+                  detect_anomalies : bool = True) -> list:
 
     labels_map = private_dataset.get_labels()
     map_clients = private_dataset.MAP_CLIENTS
@@ -63,6 +65,10 @@ def local_evaluate(model: FederatedModel,
 
     for client, (net, dl) in enumerate(zip(model.nets_list, train_dl)):
         dl['ry_hat'], dl['y_hat'], dl['fy_hat'], dl['x_lat'] = net.predict(dl['X'])
+        if not detect_anomalies:
+            aux_latent.append(dl['x_lat'])
+            continue
+            
         dl['errors'] = net.compute_errors(dl['X'], dl['ry_hat'], dl['y_hat'], dl['fy_hat'])
 
         aux_anomaly = []

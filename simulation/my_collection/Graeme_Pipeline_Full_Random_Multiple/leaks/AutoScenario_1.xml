@@ -1,0 +1,9 @@
+<?xml version='1.0' encoding='ASCII'?>
+<LeakConfig name="AutoScenario_1">
+                <Leak pipeId="160" type="abrupt" diameter="0.08664383711269173" start="2526" end="2723"/>
+                <Leak pipeId="57" type="abrupt" diameter="0.08286860380109491" start="7617" end="7819"/>
+                <Leak pipeId="110" type="incipient" diameter="0.08508841079348929" start="7677" end="7833" peak="7755"/>
+                <Leak pipeId="53" type="abrupt" diameter="0.06846332177371643" start="5279" end="5384"/>
+                <Leak pipeId="141" type="incipient" diameter="0.06063324312866031" start="4569" end="4621" peak="4595"/>
+            </LeakConfig>
+        

@@ -1,0 +1,124 @@
+<?xml version="1.0" ?>
+<ScenarioCollection>
+    <Scenario name="Graeme_'Full_pipeline'_Random_Multiple" network="../networks/Graeme_'Full_pipeline'.inp" iterations="8640" timeStep="3600">
+        <SensorConfigs>
+            <SensorConfig name="DefaultSensors">
+                <PressureSensors>
+                    <Sensor id="80"/>
+                    <Sensor id="23"/>
+                    <Sensor id="79"/>
+                    <Sensor id="100"/>
+                    <Sensor id="99"/>
+                    <Sensor id="102"/>
+                    <Sensor id="27"/>
+                    <Sensor id="68"/>
+                    <Sensor id="88"/>
+                    <Sensor id="104"/>
+                    <Sensor id="90"/>
+                    <Sensor id="96"/>
+                    <Sensor id="69"/>
+                    <Sensor id="56"/>
+                    <Sensor id="84"/>
+                    <Sensor id="46"/>
+                    <Sensor id="73"/>
+                    <Sensor id="98"/>
+                    <Sensor id="64"/>
+                    <Sensor id="12"/>
+                    <Sensor id="74"/>
+                    <Sensor id="57"/>
+                    <Sensor id="76"/>
+                    <Sensor id="101"/>
+                    <Sensor id="81"/>
+                    <Sensor id="86"/>
+                    <Sensor id="67"/>
+                    <Sensor id="75"/>
+                    <Sensor id="31"/>
+                    <Sensor id="83"/>
+                    <Sensor id="78"/>
+                    <Sensor id="72"/>
+                    <Sensor id="26"/>
+                    <Sensor id="92"/>
+                    <Sensor id="24"/>
+                    <Sensor id="13"/>
+                    <Sensor id="58"/>
+                    <Sensor id="41"/>
+                </PressureSensors>
+                <FlowSensors>
+                    <Sensor id="157"/>
+                    <Sensor id="108"/>
+                    <Sensor id="167"/>
+                    <Sensor id="110"/>
+                    <Sensor id="100"/>
+                    <Sensor id="119"/>
+                    <Sensor id="135"/>
+                    <Sensor id="102"/>
+                    <Sensor id="143"/>
+                    <Sensor id="11"/>
+                    <Sensor id="91"/>
+                    <Sensor id="118"/>
+                    <Sensor id="38"/>
+                    <Sensor id="165"/>
+                    <Sensor id="96"/>
+                    <Sensor id="19"/>
+                    <Sensor id="69"/>
+                    <Sensor id="130"/>
+                    <Sensor id="59"/>
+                    <Sensor id="85"/>
+                </FlowSensors>
+                <DemandSensors>
+                    <Sensor id="80"/>
+                    <Sensor id="23"/>
+                    <Sensor id="79"/>
+                    <Sensor id="100"/>
+                    <Sensor id="99"/>
+                    <Sensor id="102"/>
+                    <Sensor id="27"/>
+                    <Sensor id="68"/>
+                    <Sensor id="88"/>
+                    <Sensor id="104"/>
+                    <Sensor id="90"/>
+                    <Sensor id="96"/>
+                    <Sensor id="69"/>
+                    <Sensor id="56"/>
+                    <Sensor id="84"/>
+                    <Sensor id="46"/>
+                    <Sensor id="73"/>
+                    <Sensor id="98"/>
+                    <Sensor id="64"/>
+                    <Sensor id="12"/>
+                    <Sensor id="74"/>
+                    <Sensor id="57"/>
+                    <Sensor id="76"/>
+                    <Sensor id="101"/>
+                    <Sensor id="81"/>
+                    <Sensor id="86"/>
+                    <Sensor id="67"/>
+                    <Sensor id="75"/>
+                    <Sensor id="31"/>
+                    <Sensor id="83"/>
+                    <Sensor id="78"/>
+                    <Sensor id="72"/>
+                    <Sensor id="26"/>
+                    <Sensor id="92"/>
+                    <Sensor id="24"/>
+                    <Sensor id="13"/>
+                    <Sensor id="58"/>
+                    <Sensor id="41"/>
+                </DemandSensors>
+            </SensorConfig>
+        </SensorConfigs>
+        <SensorfaultConfigs>
+            <SensorfaultConfig name="GT"/>
+        </SensorfaultConfigs>
+        <LeakConfigs>
+            <LeakConfig name="Baseline"/>
+            <LeakConfig name="AutoScenario_1">
+                <Leak pipeId="130" type="incipient" diameter="0.07882669657413482" start="7173" end="7406" peak="7289"/>
+                <Leak pipeId="118" type="abrupt" diameter="0.0829313550199179" start="271" end="537"/>
+                <Leak pipeId="108" type="incipient" diameter="0.06914362448260768" start="7388" end="7598" peak="7493"/>
+                <Leak pipeId="167" type="abrupt" diameter="0.06973577411612775" start="5153" end="5299"/>
+                <Leak pipeId="143" type="abrupt" diameter="0.08869616390079553" start="7446" end="7642"/>
+            </LeakConfig>
+        </LeakConfigs>
+    </Scenario>
+</ScenarioCollection>
