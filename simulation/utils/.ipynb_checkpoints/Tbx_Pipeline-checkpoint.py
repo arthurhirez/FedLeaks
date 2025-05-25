@@ -111,7 +111,7 @@ def load_assign_network(args: Namespace, directory='networks/original/',
             district_nodes[tgt_district]['assignments'].edit_node(
                 node_id=node,
                 income_level='high',
-                density_level='high',
+                density_level='medium',
                 seed=None
             )
 
@@ -354,6 +354,7 @@ def compile_results(leaks_scenarios: dict, args: Namespace):
     # Process each scenario from the auto_leak dictionary
     for scenario, cases in leaks_scenarios.items():
         df_aux = pd.DataFrame(cases)
+        df_aux = df_aux.fillna(-1)
         df_aux['scenario'] = scenario
 
         # Convert time values from hours to seconds and ensure integer format

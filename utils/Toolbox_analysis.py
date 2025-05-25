@@ -11,40 +11,58 @@ from sklearn.preprocessing import MinMaxScaler
 alt.data_transformers.enable("vegafusion")
 
 
-# TODO: IMPROVE CLIENTS LABELS
-def plot_all_clients_side_by_side(model, priv_train_loaders, metric='acc'):
-    metric_names = ['acc', 'prec', 'rec', 'f1']
-    metric_idx = metric_names.index(metric)
-    print(metric_idx)
-    n_clients = len(model.nets_list)
+def process_latent_df(df_latent, umap_neighbors=50, umap_min_dist=0.95, reduce_raw = False):
+    # Add 'week' and 'hour' columns
+    df_latent['week'] = df_latent['timestamp'].dt.to_period('W').astype(str)
+    df_latent['hour'] = df_latent['timestamp'].dt.hour
 
-    fig, axes = plt.subplots(1, 2, figsize=(14, 5))
+    # Move 'week' and 'hour' next to 'timestamp'
+    cols = df_latent.columns.tolist()
+    timestamp_index = cols.index('timestamp')
+    cols.remove('week')
+    cols.remove('hour')
+    cols.insert(timestamp_index + 1, 'week')
+    cols.insert(timestamp_index + 2, 'hour')
+    df_latent = df_latent[cols]
 
-    # --- Left Plot: Fit History (Loss) ---
-    for i in range(n_clients):
-        fit_history = model.nets_list[i].fit_history
-        axes[0].plot(fit_history, label=f'Client {i}')
-    axes[0].set_title('Fit History (Loss)')
-    axes[0].set_xlabel('Epoch')
-    axes[0].set_ylabel('Loss')
-    axes[0].grid(True)
-    axes[0].legend()
+    # Get feature columns (assumed to be latent vectors)
+    feature_cols = [col for col in df_latent.columns if col.startswith('x_')]
 
-    # --- Right Plot: Selected Metric ---
-    for i in range(n_clients):
-        metrics = priv_train_loaders[i]['metrics']
-        metric_values = [m[metric_idx] for m in metrics]
-        axes[1].plot(metric_values, label=f'Client {i}')
-    axes[1].set_title(f'{metric.upper()} per Client')
-    axes[1].set_xlabel('Round')
-    axes[1].set_ylabel(metric.upper())
-    axes[1].grid(True)
-    axes[1].legend()
+    # Original (unscaled) features
+    X_raw = df_latent[feature_cols].values
 
-    plt.tight_layout()
-    plt.show()
+    # Scaled features
+    scaler = MinMaxScaler()
+    X_scaled = scaler.fit_transform(X_raw)
 
+    X_pca_scaled, X_umap_scaled = reduce_dims(
+        X=X_scaled,
+        method=None,
+        n_components=2,
+        umap_neighbors=umap_neighbors,
+        umap_min_dist=umap_min_dist
+    )
 
+    df_pca_scaled = pd.DataFrame(X_pca_scaled, columns=['pca_0_scaled', 'pca_1_scaled'])
+    df_umap_scaled = pd.DataFrame(X_umap_scaled, columns=['umap_0_scaled', 'umap_1_scaled'])
+
+    if reduce_raw:
+        # Dimensionality reduction
+        X_pca_raw, X_umap_raw = reduce_dims(
+            X=X_raw,
+            method=None,
+            n_components=2,
+            umap_neighbors=umap_neighbors,
+            umap_min_dist=umap_min_dist
+        )
+        # Create DataFrames
+        df_pca_raw = pd.DataFrame(X_pca_raw, columns=['pca_0_raw', 'pca_1_raw'])
+        df_umap_raw = pd.DataFrame(X_umap_raw, columns=['umap_0_raw', 'umap_1_raw'])
+
+        return df_latent, (df_pca_raw, df_umap_raw), (df_pca_scaled, df_umap_scaled)
+
+    return df_latent, df_pca_scaled, df_umap_scaled
+    
 
 def reduce_dims(X, method=None, n_components=2, umap_neighbors=15, umap_min_dist=0.1):
     """
@@ -73,7 +91,6 @@ def reduce_dims(X, method=None, n_components=2, umap_neighbors=15, umap_min_dist
         return None, X_umap
 
     return X_pca, X_umap
-
 
 
 def plot_reduced(X_pca, X_umap, labels=None, figsize=(12, 5)):
@@ -195,57 +212,6 @@ def plot_reduced_method(X_pca, X_umap, labels=None, method='PCA', ax=None, title
         plt.tight_layout()
         plt.show()
 
-
-def process_latent_df(df_latent, umap_neighbors=50, umap_min_dist=0.95):
-    # Add 'week' and 'hour' columns
-    df_latent['week'] = df_latent['timestamp'].dt.to_period('W').astype(str)
-    df_latent['hour'] = df_latent['timestamp'].dt.hour
-
-    # Move 'week' and 'hour' next to 'timestamp'
-    cols = df_latent.columns.tolist()
-    timestamp_index = cols.index('timestamp')
-    cols.remove('week')
-    cols.remove('hour')
-    cols.insert(timestamp_index + 1, 'week')
-    cols.insert(timestamp_index + 2, 'hour')
-    df_latent = df_latent[cols]
-
-    # Get feature columns (assumed to be latent vectors)
-    feature_cols = [col for col in df_latent.columns if col.startswith('x_')]
-
-    # Original (unscaled) features
-    X_raw = df_latent[feature_cols].values
-
-    # Scaled features
-    scaler = MinMaxScaler()
-    X_scaled = scaler.fit_transform(X_raw)
-
-    # Dimensionality reduction
-    X_pca_raw, X_umap_raw = reduce_dims(
-        X=X_raw,
-        method=None,
-        n_components=2,
-        umap_neighbors=umap_neighbors,
-        umap_min_dist=umap_min_dist
-    )
-
-    X_pca_scaled, X_umap_scaled = reduce_dims(
-        X=X_scaled,
-        method=None,
-        n_components=2,
-        umap_neighbors=umap_neighbors,
-        umap_min_dist=umap_min_dist
-    )
-
-    # Create DataFrames
-    df_pca_raw = pd.DataFrame(X_pca_raw, columns=['pca_0_raw', 'pca_1_raw'])
-    df_umap_raw = pd.DataFrame(X_umap_raw, columns=['umap_0_raw', 'umap_1_raw'])
-
-    df_pca_scaled = pd.DataFrame(X_pca_scaled, columns=['pca_0_scaled', 'pca_1_scaled'])
-    df_umap_scaled = pd.DataFrame(X_umap_scaled, columns=['umap_0_scaled', 'umap_1_scaled'])
-
-    return df_latent, df_pca_raw, df_umap_raw, df_pca_scaled, df_umap_scaled
-
 def extract_anomalies_df(context, merged_context):
     """
     Extracts and combines anomaly intervals from context and merged_context into one DataFrame.
@@ -312,6 +278,42 @@ def create_labeled_df(X_index, x_lat, anomaly_df, is_unix=False):
     df = df[['timestamp', 'label'] + latent_dim_names]
 
     return df
+
+
+
+# TODO: IMPROVE CLIENTS LABELS
+def plot_all_clients_side_by_side(model, priv_train_loaders, metric='acc'):
+    metric_names = ['acc', 'prec', 'rec', 'f1']
+    metric_idx = metric_names.index(metric)
+    print(metric_idx)
+    n_clients = len(model.nets_list)
+
+    fig, axes = plt.subplots(1, 2, figsize=(14, 5))
+
+    # --- Left Plot: Fit History (Loss) ---
+    for i in range(n_clients):
+        fit_history = model.nets_list[i].fit_history
+        axes[0].plot(fit_history, label=f'Client {i}')
+    axes[0].set_title('Fit History (Loss)')
+    axes[0].set_xlabel('Epoch')
+    axes[0].set_ylabel('Loss')
+    axes[0].grid(True)
+    axes[0].legend()
+
+    # --- Right Plot: Selected Metric ---
+    for i in range(n_clients):
+        metrics = priv_train_loaders[i]['metrics']
+        metric_values = [m[metric_idx] for m in metrics]
+        axes[1].plot(metric_values, label=f'Client {i}')
+    axes[1].set_title(f'{metric.upper()} per Client')
+    axes[1].set_xlabel('Round')
+    axes[1].set_ylabel(metric.upper())
+    axes[1].grid(True)
+    axes[1].legend()
+
+    plt.tight_layout()
+    plt.show()
+
 
 
 def plot_data_leak(

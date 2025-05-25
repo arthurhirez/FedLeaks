@@ -14,15 +14,15 @@ def parse_args():
     parser.add_argument('--callable', type=bool, default=False)
 
     # Features drift
-    parser.add_argument('--tgt_district', type=str, default='District_A', help='Target district name.')
-    parser.add_argument('--seed_node', type=str, default='106', help='Seed node for simulation.')  # 415
+    parser.add_argument('--tgt_district', type=str, default='District_E', help='Target district name.')
+    parser.add_argument('--seed_node', type=str, default='12', help='Seed node for simulation.')  # 106, 415
     parser.add_argument('--income_density_mapping', type=dict,
                         default=
                         [('low', 'low'),
-                         ('low', 'low'),
+                         ('high', 'low'),
                          ('low', 'high'),
                          ('medium', 'medium'),
-                         ('high', 'low')],
+                         ('low', 'low')],
                         # [('low', 'medium'),
                         #  ('low', 'low'),
                         #  ('low', 'low')
@@ -81,6 +81,7 @@ def main():
         print("Generating visualization...")
         district_visualization(id_network = args.id_network,
                                id_exp = args.id_exp,
+                               tgt_district = args.tgt_district,
                                save_path='../results/imgs')
         print("Done. See results in 'results/imgs'")
 

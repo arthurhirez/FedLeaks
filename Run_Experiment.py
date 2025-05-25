@@ -19,22 +19,23 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 def parse_args():
     parser = ArgumentParser(description='You Only Need Me', allow_abbrev=False)
     parser.add_argument('--device_id', type=int, default=0, help='The Device Id for Experiment')
-    parser.add_argument('--experiment_id', type=str, default='Pipeline_Full_medium', help='Experiment identifier')
+    parser.add_argument('--experiment_id', type=str, default='Pipeline_Full_medium_E', help='Experiment identifier')
     parser.add_argument('--extra_coments', type=str, default='proto_month', help='Aditional info')
-    parser.add_argument('--run_simulation', type=bool, default=True, help='The Device Id for Experiment')
+    parser.add_argument('--run_simulation', type=bool, default=False, help='The Device Id for Experiment')
     parser.add_argument('--detect_anomalies', type=bool, default=False)
-    parser.add_argument('--generate_viz', type=bool, default=True, help='Creates and saves interactive visualizations')
+    parser.add_argument('--generate_viz', type=bool, default=False, help='Creates and saves interactive visualizations')
 
 
     # Communication - epochs
     parser.add_argument('--communication_epoch', type=int, default=15,
                         help='The Communication Epoch in Federated Learning')
-    parser.add_argument('--local_epoch', type=int, default=2, help='The Local Epoch for each Participant')
+    parser.add_argument('--local_epoch', type=int, default=1, help='The Local Epoch for each Participant')
 
     # Participants info
     parser.add_argument('--parti_num', type=int, default=None, help='The Number for Participants. If "None" will be setted as the sum of values described in --domain')
     parser.add_argument('--online_ratio', type=float, default=1, help='The Ratio for Online Clients')
-
+    parser.add_argument('--tgt_district', type=str, default='District_E', help='Target district name.')
+    
     # Data parameter
     parser.add_argument('--dataset', type=str, default='fl_leaks', choices=DATASET_NAMES, help='Which scenario to perform experiments on.')
     parser.add_argument('--domains', type=dict, default={
@@ -103,12 +104,11 @@ def main():
 
         model = get_model(backbones_list, args, priv_dataset)
 
-        priv_train_loaders, aux_latent = train(
-            model=model,
-            private_dataset=priv_dataset,
-            scenario=scenario,
-            args=args
-        )
+        priv_train_loaders, aux_latent = train(model=model,
+                                                private_dataset=priv_dataset,
+                                                scenario=scenario,
+                                                args=args
+                                            )
 
         results[scenario]['lat'] = aux_latent
         results[scenario]['model'] = model
@@ -136,17 +136,19 @@ def main():
 
             df_latent = pd.concat(aux_latents)
 
-            df_latent, df_pca_raw, df_umap_raw, df_pca_scaled, df_umap_scaled = process_latent_df(
+            # df_latent, df_raw, df_scaled = process_latent_df(
+            df_latent, df_pca_scaled, df_umap_scaled = process_latent_df(
                 df_latent,
                 umap_neighbors=50,
-                umap_min_dist=0.95
+                umap_min_dist=0.95,
+                reduce_raw = False
             )
 
             latent_dfs[scenario][epoch] = {
                 'latent_space': df_latent,
-                'pca_raw': df_pca_raw,
+                # 'pca_raw': df_pca_raw,
                 'pca_scl': df_pca_scaled,
-                'umap_raw': df_umap_raw,
+                # 'umap_raw': df_umap_raw,
                 'umap_scl': df_umap_scaled
             }
 
@@ -170,7 +172,7 @@ def main():
         format_latent_dict(latent_dfs)
         
         # Load and normalize time-series
-        scaled_df = load_and_scale_data(id_network = 'Graeme', id_experiment = args.experiment_id)
+        scaled_df = load_and_scale_data(id_network = 'Graeme', id_experiment = args.experiment_id, tgt_district = args.tgt_district)
         
         # Combine all latent outputs
         df_combined = combine_latents(latent_dfs)
@@ -180,7 +182,8 @@ def main():
         
         # Plot time-series and save
         batch_temporal = (agg_int * args.window_size) / 24
-        plot_time_series_and_latents(df_combined, scaled_df, results_id, batch_temporal=batch_temporal)
+        plot_time_series_and_latents(df_combined, scaled_df, results_id,
+                                     batch_temporal=batch_temporal)
         print("Done. See results in 'results/imgs'")
 
 if __name__ == "__main__":

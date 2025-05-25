@@ -48,7 +48,6 @@ class FPL(FederatedModel):
                               range(self.online_num)}  # comm_epoch : {client : {local_epoch : deepcopy(local_protos)}}
         self.local_metrics_train = {idx: [] for idx in range(self.online_num)}
         self.local_metrics_test = {idx: [] for idx in range(self.online_num)}
-
        
         self.infoNCET = args.infoNCET
         self.device = 'cpu'
@@ -134,7 +133,7 @@ class FPL(FederatedModel):
         cu_info_loss = loss_mse(f_now.squeeze(0), mean_f_pos)
 
         hierar_info_loss = xi_info_loss + cu_info_loss
-        return hierar_info_loss
+        return xi_info_loss
 
     def calculate_infonce(self, f_now, f_pos, f_neg):
         f_proto = torch.cat((f_pos, f_neg), dim=0)

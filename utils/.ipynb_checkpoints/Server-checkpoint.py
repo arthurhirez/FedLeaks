@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 from argparse import Namespace
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
-
+from tqdm import tqdm
 from datasets.utils import FederatedDataset
 from models.utils.federated_model import FederatedModel
 from utils.timeseries_detection import find_anomalies
@@ -36,7 +36,7 @@ def train(model: FederatedModel, private_dataset: FederatedDataset, scenario: st
             epoch_loc_loss_dict = model.loc_update(priloader_list = private_train_loaders,
                                                    prilabel_list = private_train_labels)
 
-        print(10 * '**--')
+        # print(10 * '**--')
         aux_latent = local_evaluate(model=model,
                                     train_dl=priv_train_loaders,
                                     private_dataset=private_dataset,

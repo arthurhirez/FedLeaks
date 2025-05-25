@@ -1,6 +1,6 @@
 import torch.optim as optim
 import torch.nn as nn
-from tqdm import tqdm
+
 import copy
 # from utils.args import *
 from models.utils.federated_model import FederatedModel

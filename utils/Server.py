@@ -36,7 +36,7 @@ def train(model: FederatedModel, private_dataset: FederatedDataset, scenario: st
             epoch_loc_loss_dict = model.loc_update(priloader_list = private_train_loaders,
                                                    prilabel_list = private_train_labels)
 
-        print(10 * '**--')
+        # print(10 * '**--')
         aux_latent = local_evaluate(model=model,
                                     train_dl=priv_train_loaders,
                                     private_dataset=private_dataset,

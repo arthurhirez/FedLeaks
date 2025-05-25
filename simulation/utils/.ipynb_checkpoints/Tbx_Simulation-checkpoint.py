@@ -602,12 +602,12 @@ def smooth_epoch_transitions(data_consumption, transition_days=2,
     return data_consumption
 
 
-def district_visualization(id_network, id_exp, save_path='../results/imgs'):
+def district_visualization(id_network, id_exp, tgt_district, save_path='../results/imgs'):
     # Load WaterNetworkModel
     wn = wntr.network.WaterNetworkModel(f'networks/{id_network}_{id_exp}.inp')
 
     # Load district node assignments
-    with open(f'networks/assignments/{id_network}_{id_exp}_District_A_final.pkl', 'rb') as file:
+    with open(f'networks/assignments/{id_network}_{id_exp}_{tgt_district}_final.pkl', 'rb') as file:
         district_nodes = pickle.load(file)
 
     # Extract consumption data

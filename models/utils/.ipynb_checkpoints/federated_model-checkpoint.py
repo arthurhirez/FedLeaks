@@ -39,8 +39,8 @@ class FederatedModel(nn.Module):
         self.federation = None
 
         self.epoch_index = 0 # Save the Communication Index
-
-        self.weight_history = [] # save models
+        self.weight_history = [] # save global models
+        self.clients_models_history = {}
 
         self.checkpoint_path = checkpoint_path() + self.args.dataset + '/' + self.args.structure + '/'
         create_if_not_exists(self.checkpoint_path)
@@ -66,6 +66,7 @@ class FederatedModel(nn.Module):
     def loc_update(self, priloader_list):
         pass
 
+    # TODO REFACTOR TO TORCH
     def load_pretrained_nets(self):
         if self.load:
             for j in range(self.args.parti_num):
@@ -84,6 +85,12 @@ class FederatedModel(nn.Module):
             prev_net.load_state_dict(net_para)
 
     def aggregate_nets(self, freq=None):
+        # Save clients weights before agg
+        self.clients_models_history[self.epoch_index] = []
+        for _, net in enumerate(self.nets_list):
+            self.clients_models_history[self.epoch_index].append(copy.deepcopy(net.state_dict()))
+            
+            
         global_net = self.global_net
         nets_list = self.nets_list
 
@@ -119,6 +126,8 @@ class FederatedModel(nn.Module):
         for _, net in enumerate(nets_list):
             net.load_state_dict(global_net.state_dict())
 
+        self.epoch_index += 1
+        
     # def aggregate_nets(self, epoch_index, freq=None):
     #     global_net = self.global_net
     #     nets_list = self.nets_list

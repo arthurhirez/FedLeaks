@@ -110,7 +110,7 @@ def load_assign_network(args: Namespace, directory='networks/original/',
             # TODO: include income/density change in args
             district_nodes[tgt_district]['assignments'].edit_node(
                 node_id=node,
-                income_level='medium',
+                income_level='high',
                 density_level='medium',
                 seed=None
             )
