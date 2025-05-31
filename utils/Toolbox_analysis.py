@@ -11,20 +11,7 @@ from sklearn.preprocessing import MinMaxScaler
 alt.data_transformers.enable("vegafusion")
 
 
-def process_latent_df(df_latent, umap_neighbors=50, umap_min_dist=0.95, reduce_raw = False):
-    # Add 'week' and 'hour' columns
-    df_latent['week'] = df_latent['timestamp'].dt.to_period('W').astype(str)
-    df_latent['hour'] = df_latent['timestamp'].dt.hour
-
-    # Move 'week' and 'hour' next to 'timestamp'
-    cols = df_latent.columns.tolist()
-    timestamp_index = cols.index('timestamp')
-    cols.remove('week')
-    cols.remove('hour')
-    cols.insert(timestamp_index + 1, 'week')
-    cols.insert(timestamp_index + 2, 'hour')
-    df_latent = df_latent[cols]
-
+def process_latent_df(df_latent, umap_neighbors=50, umap_min_dist=0.95, reduce_raw = False, id_cols = None, return_scaled = False):
     # Get feature columns (assumed to be latent vectors)
     feature_cols = [col for col in df_latent.columns if col.startswith('x_')]
 
@@ -35,6 +22,9 @@ def process_latent_df(df_latent, umap_neighbors=50, umap_min_dist=0.95, reduce_r
     scaler = MinMaxScaler()
     X_scaled = scaler.fit_transform(X_raw)
 
+    if return_scaled:
+        df_latent[feature_cols] = X_scaled
+
     X_pca_scaled, X_umap_scaled = reduce_dims(
         X=X_scaled,
         method=None,
@@ -43,9 +33,16 @@ def process_latent_df(df_latent, umap_neighbors=50, umap_min_dist=0.95, reduce_r
         umap_min_dist=umap_min_dist
     )
 
-    df_pca_scaled = pd.DataFrame(X_pca_scaled, columns=['pca_0_scaled', 'pca_1_scaled'])
-    df_umap_scaled = pd.DataFrame(X_umap_scaled, columns=['umap_0_scaled', 'umap_1_scaled'])
+    if id_cols is None:
+        df_pca_scaled = pd.DataFrame(X_pca_scaled, columns=['latent_x', 'latent_y'])
+        df_umap_scaled = pd.DataFrame(X_umap_scaled, columns=['latent_x', 'latent_y'])
+    else:
+        df_pca_scaled = df_latent[id_cols].copy()
+        df_pca_scaled[['latent_x', 'latent_y']] = X_pca_scaled
 
+        df_umap_scaled = df_latent[id_cols].copy()
+        df_umap_scaled[['latent_x', 'latent_y']] = X_umap_scaled
+        
     if reduce_raw:
         # Dimensionality reduction
         X_pca_raw, X_umap_raw = reduce_dims(
@@ -56,8 +53,8 @@ def process_latent_df(df_latent, umap_neighbors=50, umap_min_dist=0.95, reduce_r
             umap_min_dist=umap_min_dist
         )
         # Create DataFrames
-        df_pca_raw = pd.DataFrame(X_pca_raw, columns=['pca_0_raw', 'pca_1_raw'])
-        df_umap_raw = pd.DataFrame(X_umap_raw, columns=['umap_0_raw', 'umap_1_raw'])
+        df_pca_raw = pd.DataFrame(X_pca_raw, columns=['latent_x', 'latent_y'])
+        df_umap_raw = pd.DataFrame(X_umap_raw, columns=['latent_x', 'latent_y'])
 
         return df_latent, (df_pca_raw, df_umap_raw), (df_pca_scaled, df_umap_scaled)
 

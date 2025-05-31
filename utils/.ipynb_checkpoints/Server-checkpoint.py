@@ -53,7 +53,7 @@ def train(model: FederatedModel, private_dataset: FederatedDataset, scenario: st
 
 
 
-def local_evaluate(model: FederatedModel,
+def local_evaluate(model,
                    train_dl: list[dict],
                    private_dataset: FederatedDataset,
                    group_detections: bool = False,
@@ -63,7 +63,10 @@ def local_evaluate(model: FederatedModel,
     map_clients = private_dataset.MAP_CLIENTS
     aux_latent = []
 
-    for client, (net, dl) in enumerate(zip(model.nets_list, train_dl)):
+    # Can be both a list of models or a Federated model
+    nets_list = model.nets_list if isinstance(model, FederatedModel) else model
+
+    for client, (net, dl) in enumerate(zip(nets_list, train_dl)):
         dl['ry_hat'], dl['y_hat'], dl['fy_hat'], dl['x_lat'] = net.predict(dl['X'])
         if not detect_anomalies:
             aux_latent.append(dl['x_lat'])

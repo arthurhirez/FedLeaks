@@ -188,7 +188,11 @@ class BuildingAssigner:
                 [tpl for tpl, _ in templates_with_weights],
                 weights=[w for _, w in templates_with_weights]
             )[0]
+            
+            # Avoid assign houses to medium/high populational densities
             if density_level != 'low' and selected_template != 'houses':
+                break
+            if density_level == 'low' and selected_template != 'buildings_G' and selected_template != 'buildings_M':
                 break
 
         config = templates[selected_template]

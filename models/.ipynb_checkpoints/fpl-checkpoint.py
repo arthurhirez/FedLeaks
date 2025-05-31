@@ -49,6 +49,7 @@ class FPL(FederatedModel):
         self.local_metrics_train = {idx: [] for idx in range(self.online_num)}
         self.local_metrics_test = {idx: [] for idx in range(self.online_num)}
 
+        self.debug_latent = {}
        
         self.infoNCET = args.infoNCET
         self.device = 'cpu'
@@ -134,7 +135,7 @@ class FPL(FederatedModel):
         cu_info_loss = loss_mse(f_now.squeeze(0), mean_f_pos)
 
         hierar_info_loss = xi_info_loss + cu_info_loss
-        return hierar_info_loss
+        return xi_info_loss
 
     def calculate_infonce(self, f_now, f_pos, f_neg):
         f_proto = torch.cat((f_pos, f_neg), dim=0)
@@ -329,9 +330,10 @@ class FPL(FederatedModel):
                             agg_protos_label[labels[i].item()].append(latent[i, :])
                         else:
                             agg_protos_label[labels[i].item()] = [latent[i, :]]
-
-        model.fit_history.append((epoch_loss, epoch_loss_MSE, epoch_loss_Info))
-
+    
+        model.fit_history.append((epoch_loss, epoch_loss_MSE, epoch_loss_Info))   
+        
+        self.debug_latent[index] = agg_protos_label.copy()
         agg_protos = agg_func(agg_protos_label)
 
         # self.local_history[index].append(copy.deepcopy(agg_protos))
@@ -341,3 +343,16 @@ class FPL(FederatedModel):
         })
 
         self.local_protos[index] = agg_protos
+
+    def compile_final_results(self):
+        results = {}
+        results['global_proto'] = self.global_protos
+        results['global_history'] = self.global_history
+        
+        results['local_protos'] = self.local_protos
+        results['local_history'] = self.local_history
+
+        results['global_weights_history'] = self.weight_history
+        results['clients_weights_history'] = self.clients_models_history
+
+        return results

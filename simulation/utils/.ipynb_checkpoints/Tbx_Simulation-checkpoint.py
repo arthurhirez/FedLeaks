@@ -105,12 +105,7 @@ def generate_consumption_patterns(data_consumption,
                                   epochs=None,
                                   days=None,
                                   n_intervals=24,
-                                  unit='l/s',
-                                  morning_peak=1.0,
-                                  afternoon_peak=0.75,
-                                  evening_peak=1.25,
-                                  night_consumption=0.25,
-                                  variation_strength=0.02):
+                                  unit='l/s'):
     consumption_patterns[id_time] = {}
 
     for node, base_consumption, density in zip(data_consumption['node_id'], data_consumption['consumption'],

@@ -16,9 +16,8 @@ import wntr
 import os
 
 
-
 class BuildingAssigner:
-    def __init__(self, node_list, water_network, income_level='medium', density_level='medium', seed=None):
+    def __init__(self, node_list, water_network, income_level='medium', density_level='medium', seed=23):
         """
         Initialize the building assigner using high-level urban characteristics.
 
@@ -42,6 +41,8 @@ class BuildingAssigner:
         self.node_list = node_list
         self.water_network = water_network
         self.standard_consumption = {1: 5, 2: 10, 3: 15, 4: 25, 5: 40}  # m³/month
+        self.income = income_level
+        self.density = density_level
 
         # Generate building templates + profile from high-level inputs
         houses, buildings_P, buildings_M, buildings_G, profile = generate_building_profiles(
@@ -121,8 +122,11 @@ class BuildingAssigner:
         results_df = pd.DataFrame(assignments)
         results_df['units'] = results_df['units'].fillna(1).astype(int)
         results_df['consumption_unit'] = results_df['consumption'] / results_df['units']
+        results_df['income'] = self.income
+        results_df['density'] = self.density
 
         self.data_buildings = results_df
+        self.original_data_buildings = results_df.copy()
 
     def _weighted_choice(self, weighted_dict):
         options, weights = zip(*weighted_dict)
@@ -184,7 +188,11 @@ class BuildingAssigner:
                 [tpl for tpl, _ in templates_with_weights],
                 weights=[w for _, w in templates_with_weights]
             )[0]
+            
+            # Avoid assign houses to medium/high populational densities
             if density_level != 'low' and selected_template != 'houses':
+                break
+            if density_level == 'low' and selected_template != 'buildings_G' and selected_template != 'buildings_M':
                 break
 
         config = templates[selected_template]
@@ -204,12 +212,13 @@ class BuildingAssigner:
             'standard': int(standard),
             'consumption': int(consumption),
             'units': int(units),
-            'consumption_unit': consumption / units
+            'consumption_unit': consumption / units,
+            'income': income_level,
+            'density': density_level,
         }
 
-        new_row_df = pd.DataFrame([new_row], columns=self.data_buildings.columns)
+        new_row_df = pd.DataFrame(data = [new_row], columns=self.data_buildings.columns)
         self.data_buildings.loc[self.data_buildings['node_id'] == node_id] = new_row_df.values
-
 
     def plot_assignments(self, show_edges=True, figsize=(12, 10)):
         """
@@ -471,7 +480,7 @@ def check_district_node_coverage(full_node_list, district_node_dict, return_dict
     } if return_dict else None
 
 
-def combine_districts(district_nodes, init_assigner = True, plot_size=(600, 300)):
+def combine_districts(district_nodes, init_assigner=True, plot_size=(600, 300)):
     """
     Assigns and plots interactive building distributions for all districts.
 
@@ -491,7 +500,6 @@ def combine_districts(district_nodes, init_assigner = True, plot_size=(600, 300)
     """
     charts = []
 
-
     for district_name, district_data in district_nodes.items():
         if init_assigner:
             assigner = BuildingAssigner(
@@ -507,7 +515,6 @@ def combine_districts(district_nodes, init_assigner = True, plot_size=(600, 300)
         chart = district_data['assignments'].plot_interactive_assignments(
             plot_size=plot_size,
         ).properties(title=f"District: {district_name}")
-
 
         charts.append(chart)
 

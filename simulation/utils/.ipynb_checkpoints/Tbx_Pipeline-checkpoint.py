@@ -42,8 +42,11 @@ def load_assign_network(args: Namespace, directory='networks/original/',
     """
 
     id_network = args.id_network
-    id_exp = args.id_exp
+    id_exp = args.experiment_id
     tgt_district = args.tgt_district
+
+    drift_income = args.drift_income
+    drift_density = args.drift_density
 
     # Load the network graph and corresponding district data
     wn, district_nodes = load_network_and_districts(id_network=id_network,
@@ -110,8 +113,8 @@ def load_assign_network(args: Namespace, directory='networks/original/',
             # TODO: include income/density change in args
             district_nodes[tgt_district]['assignments'].edit_node(
                 node_id=node,
-                income_level='high',
-                density_level='medium',
+                income_level=drift_income,
+                density_level=drift_density,
                 seed=None
             )
 
@@ -146,13 +149,6 @@ def load_assign_network(args: Namespace, directory='networks/original/',
         data_consumption = pd.concat(nodes_districts)
         origin_data = pd.concat(aux_origin)
 
-        base_peaks = np.array([args.morning_peak, args.afternoon_peak, args.evening_peak, args.night_consumption])
-        noisy_peaks = shuffle_and_perturb_array(base_values=base_peaks,
-                                                scale=0.125,
-                                                min_val=0.25)
-
-        morning_peak_var, afternoon_peak_var, evening_peak_var, night_consumption_var = noisy_peaks
-
         # Generate consumption pattern for current simulation step
         generate_consumption_patterns(
             data_consumption=data_consumption,
@@ -162,12 +158,7 @@ def load_assign_network(args: Namespace, directory='networks/original/',
             epochs=args.epochs_lenght,
             days=args.days_lenght,
             n_intervals=args.n_intervals,
-            unit=args.unit,
-            morning_peak=morning_peak_var,
-            afternoon_peak=afternoon_peak_var,
-            evening_peak=evening_peak_var,
-            night_consumption=night_consumption_var,
-            variation_strength=0.02
+            unit=args.unit
         )
 
     # TODO MELHORAR KKKKK
@@ -179,6 +170,7 @@ def load_assign_network(args: Namespace, directory='networks/original/',
     if save_assignments:
         with open(f"networks/assignments/{id_network}_{id_exp}_{tgt_district}_final.pkl", "wb") as f:
             pickle.dump(district_nodes, f)
+
 
     return wn, consumption_patterns, data_consumption
 
@@ -209,7 +201,7 @@ def run_scenarios(water_network: object, consumption_patterns: dict, data_consum
 
     # Extract key identifiers
     id_network = args.id_network
-    id_exp = args.id_exp
+    id_exp = args.experiment_id
 
     # Merge all individual node consumption patterns into a full time series
     full_time_series = concatenate_consumption_patterns(consumption_patterns)
@@ -235,6 +227,7 @@ def run_scenarios(water_network: object, consumption_patterns: dict, data_consum
 
             # Set the base demand and assign the corresponding time series pattern
             junction.demand_timeseries_list[0].base_value = full_time_series[node]['mean_base_demand']
+            print(new_id)
             water_network.add_pattern(new_id, full_time_series[node]['full_series'])
             junction.demand_timeseries_list[0].pattern_name = new_id
 
@@ -268,7 +261,7 @@ def run_scenarios(water_network: object, consumption_patterns: dict, data_consum
         iterations=total_iterations,
         num_scenarios=1,
         leaks_per_scenario=5,
-        severity=args.value_exp,
+        severity=args.leak_severity,
         min_duration=24,
         max_duration=300,
         save_dict_path=f'my_collection/{path_exp}.pkl'
@@ -347,7 +340,7 @@ def compile_results(leaks_scenarios: dict, args: Namespace):
     # Load generated scenarios using the ScenarioCollection class
     # aux_directory = 'simulation/'if args.callable else ''
     my_collection = ScenarioCollection(f'my_collection')
-    my_scenario = my_collection.get_scenario(f"{args.id_network}_{args.id_exp}_Random_Multiple")
+    my_scenario = my_collection.get_scenario(f"{args.id_network}_{args.experiment_id}_Random_Multiple")
 
     scenarios_aux = []
 
@@ -367,7 +360,7 @@ def compile_results(leaks_scenarios: dict, args: Namespace):
     # Concatenate and save scenario metadata
     df_scenarios = pd.concat(scenarios_aux)
 
-    save_path = f'../data_leaks/{args.id_network}/{args.id_exp}'
+    save_path = f'../data_leaks/{args.id_network}/{args.experiment_id}'
     if not os.path.exists(save_path):
         os.makedirs(save_path)
 

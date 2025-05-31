@@ -48,6 +48,8 @@ class FPL(FederatedModel):
                               range(self.online_num)}  # comm_epoch : {client : {local_epoch : deepcopy(local_protos)}}
         self.local_metrics_train = {idx: [] for idx in range(self.online_num)}
         self.local_metrics_test = {idx: [] for idx in range(self.online_num)}
+
+        self.debug_latent = {}
        
         self.infoNCET = args.infoNCET
         self.device = 'cpu'
@@ -328,9 +330,10 @@ class FPL(FederatedModel):
                             agg_protos_label[labels[i].item()].append(latent[i, :])
                         else:
                             agg_protos_label[labels[i].item()] = [latent[i, :]]
-
-        model.fit_history.append((epoch_loss, epoch_loss_MSE, epoch_loss_Info))
-
+    
+        model.fit_history.append((epoch_loss, epoch_loss_MSE, epoch_loss_Info))   
+        
+        self.debug_latent[index] = agg_protos_label.copy()
         agg_protos = agg_func(agg_protos_label)
 
         # self.local_history[index].append(copy.deepcopy(agg_protos))
@@ -340,3 +343,16 @@ class FPL(FederatedModel):
         })
 
         self.local_protos[index] = agg_protos
+
+    def compile_final_results(self):
+        results = {}
+        results['global_proto'] = self.global_protos
+        results['global_history'] = self.global_history
+        
+        results['local_protos'] = self.local_protos
+        results['local_history'] = self.local_history
+
+        results['global_weights_history'] = self.weight_history
+        results['clients_weights_history'] = self.clients_models_history
+
+        return results
