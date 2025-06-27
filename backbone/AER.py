@@ -9,7 +9,7 @@ import torch.optim as optim
 import importlib
 from sklearn.preprocessing import MinMaxScaler
 from utils.timeseries_errors import reconstruction_errors, regression_errors
-
+from collections import Counter
 
 # -------- CUSTOM SUPPORT LAYERS --------
 class RepeatVector(nn.Module):
@@ -128,23 +128,39 @@ class AER(nn.Module):
         """
         Prepares PyTorch DataLoader from input data, including hour-based label.
         """
-        if y is None:
-            y = X.copy()
 
-        # Extract 12-hour format label from timestamps
-        timestamps = pd.to_datetime(X_index, unit='s')
-        # hour = timestamps.hour
-        # label = hour.where(hour < 12, hour - 12).to_numpy()
-        # label = label / self.agg_interval
-        month = timestamps.month - 1
-        label = month.to_numpy()
-        label_tensor = torch.tensor(label, dtype=torch.int64)  # or float32 if needed
+
+        # # Extract 12-hour format label from timestamps
+        # timestamps = pd.to_datetime(X_index, unit='s')
+        # # hour = timestamps.hour
+        # # label = hour.where(hour < 12, hour - 12).to_numpy()
+        # # label = label / self.agg_interval
+        # month = timestamps.month - 1
+        # label = month.to_numpy()
+        # label_tensor = torch.tensor(label, dtype=torch.int64)  # or float32 if needed
+
+        labels, mask = get_majority_month_label(windows_timestamps=X_index, threshold=0.75)
+
+        label_filtered = [l for l in labels if l is not None]
+        label_tensor = torch.tensor(label_filtered, dtype=torch.int64)
+
+        X_filtered = X[mask].copy()
+
+        if y is None:
+            y = X_filtered.copy()
 
         # Prepare input and targets
-        X = X[:, 1:-1, :]
+        X_filtered = X[mask].copy()
+
+        if X_filtered.shape[1] < 3:
+            raise ValueError(f"Window size too small after filtering: {X_filtered.shape[1]} (need at least 3)")
+
+        # Optionally adjust the slicing if necessary
+        X_filtered = X_filtered[:, 1:-1, :]
+
         ry, y, fy = y[:, 0], y[:, 1:-1], y[:, -1]
 
-        X_tensor = torch.tensor(X, dtype=torch.float32)
+        X_tensor = torch.tensor(X_filtered, dtype=torch.float32)
         y_tensor = torch.tensor(y, dtype=torch.float32)
         ry_tensor = torch.tensor(ry, dtype=torch.float32).unsqueeze(-1)
         fy_tensor = torch.tensor(fy, dtype=torch.float32).unsqueeze(-1)
@@ -580,3 +596,45 @@ def score_anomalies(y: ndarray, ry_hat: ndarray, y_hat: ndarray, fy_hat: ndarray
         scores = reg_scores
 
     return scores
+
+
+def get_majority_month_label(windows_timestamps, threshold=0.7):
+    """
+    Assign continuous month labels (e.g., Jan Year 0 = 0, Jan Year 1 = 12)
+    based on majority in each window.
+
+    Parameters:
+        windows_timestamps: array-like of shape (num_windows, window_size)
+        threshold: float - required fraction of timestamps in one month
+
+    Returns:
+        labels: list of int (continuous month indices) or None if threshold not met
+        mask: numpy array of bool, True where threshold met
+    """
+    labels = []
+    mask = []
+
+    # Flatten all timestamps to find the earliest year
+    all_timestamps = np.concatenate(windows_timestamps)
+    all_datetimes = pd.to_datetime(all_timestamps, unit='s')
+    base_year = all_datetimes.min().year
+
+    for window in windows_timestamps:
+        dt_index = pd.to_datetime(window, unit='s')
+        months = dt_index.month
+        years = dt_index.year
+        # Continuous month index
+        continuous_months = (years - base_year) * 12 + (months - 1)
+
+        counts = Counter(continuous_months)
+        majority_month, majority_count = counts.most_common(1)[0]
+        fraction = majority_count / len(window)
+
+        if fraction >= threshold:
+            labels.append(majority_month)
+            mask.append(True)
+        else:
+            labels.append(None)
+            mask.append(False)
+
+    return labels, np.array(mask)

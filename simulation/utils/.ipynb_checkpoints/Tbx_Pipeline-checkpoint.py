@@ -71,16 +71,21 @@ def load_assign_network(args: Namespace, directory='networks/original/',
     # Retrieve the target district graph for simulation
     G_tgt = district_nodes[tgt_district]['network'].to_graph().to_undirected()
 
+    
     # Simulate urban growth until the target number of segments is reached
+    n_steps = args.n_segments - (args.warm_up + 1)
+    aux_stop = 0
     while True:
         growth_tgt = simulate_urban_growth(G=G_tgt,
                                            seed_node=args.seed_node,
-                                           n_steps=args.n_segments - 1,
+                                           n_steps=n_steps,
                                            growth_chance=0.95,
-                                           max_neighbors_per_step=4)
-        if len(growth_tgt) == args.n_segments:
+                                           max_neighbors_per_step=2)
+        aux_stop += 1
+        if (len(growth_tgt) == (n_steps - 1)) or (aux_stop == 15):
             break
 
+    
     # TODO: MELHORAR ESSA CEHCAGEM!
     skip_set = set(MAPPING_SENSORS[args.id_network]['Skip'])
     for s in growth_tgt:
@@ -89,7 +94,8 @@ def load_assign_network(args: Namespace, directory='networks/original/',
     # Initialize tracking variables for used and previous nodes
     used_nodes = set()
     previous_nodes = set()
-    growth_tgt.insert(0, set())  # Insert dummy step 0 for consistent indexing
+    for _ in range((args.warm_up + 1)):
+        growth_tgt.insert(0, set())
     district_nodes[tgt_district]['assignments'].growth_nodes = growth_tgt
     consumption_patterns = {}
     tgt_nodes = list(growth_tgt[-1])
@@ -227,7 +233,7 @@ def run_scenarios(water_network: object, consumption_patterns: dict, data_consum
 
             # Set the base demand and assign the corresponding time series pattern
             junction.demand_timeseries_list[0].base_value = full_time_series[node]['mean_base_demand']
-            print(new_id)
+            # print(new_id)
             water_network.add_pattern(new_id, full_time_series[node]['full_series'])
             junction.demand_timeseries_list[0].pattern_name = new_id
 

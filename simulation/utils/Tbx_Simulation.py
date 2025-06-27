@@ -133,29 +133,36 @@ def generate_consumption_patterns(data_consumption,
             config = DISTRIBUTION_PATTERNS.get(density)
             base_peaks, variation_strength = config[:-1], config[-1]
 
+
             if density == 'low':
-                noisy_peaks = shuffle_and_perturb_array(base_values=base_peaks,
-                                                        scale=0.125,
-                                                        min_val=0.2)
-            elif density == 'medium':
-                if random.random() < 0.25:
+                
+                if random.random() < 0.10:
                     noisy_peaks = add_noise_with_lower_bound(base_values=base_peaks,
-                                                             scale=0.075,
-                                                             min_val=0.5)
+                                                             scale=0.10,
+                                                             min_val=0.15)
+                else:
+                    noisy_peaks = shuffle_and_perturb_array(base_values=base_peaks,
+                                                            scale=0.10,
+                                                            min_val=0.15)
+            elif density == 'medium':
+                if random.random() < 0.30:
+                    noisy_peaks = add_noise_with_lower_bound(base_values=base_peaks,
+                                                             scale=0.05,
+                                                             min_val=0.45)
                 else:
                     noisy_peaks = shuffle_and_perturb_array(base_values=base_peaks,
                                                             scale=0.05,
-                                                            min_val=0.5)
+                                                            min_val=0.45)
             else:
-                if random.random() < 0.40:
+                if random.random() < 0.90:
                     noisy_peaks = add_noise_with_lower_bound(base_values=base_peaks,
                                                              scale=0.035,
-                                                             min_val=0.125)
+                                                             min_val=0.25)
                 else:
                     noisy_peaks = shuffle_and_perturb_array(base_values=base_peaks,
                                                             scale=0.035,
-                                                            min_val=0.125)
-
+                                                            min_val=0.25)
+        
             morning_peak_var, afternoon_peak_var, evening_peak_var, night_consumption_var = noisy_peaks
 
             weekly_patterns = generate_weekly_consumption_patterns(base_demand=base_demand,

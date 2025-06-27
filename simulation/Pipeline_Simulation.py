@@ -30,6 +30,7 @@ def main():
     scripts_path = r"C:\Users\arthu\anaconda3\envs\TsLeaks\Scripts"
     os.environ["PATH"] = scripts_path + os.pathsep + os.environ["PATH"]
 
+    # print('checkpoint 1')
     # Load network and assign buildings
     wn, consumption_patterns, data_consumption = load_assign_network(
         directory='networks\\original\\',
@@ -38,6 +39,7 @@ def main():
         args=args
     )
 
+    # print('checkpoint 2')
     # Run scenarios
     auto_leaks = run_scenarios(
         water_network=wn,
@@ -46,19 +48,20 @@ def main():
         args=args
     )
 
+    # print('checkpoint 3')
     # Compile and save results
     compile_results(
         leaks_scenarios=auto_leaks,
         args=args
     )
 
-    if args.generate_viz:
-        print("Generating visualization...")
-        district_visualization(id_network = args.id_network,
-                               id_exp = args.experiment_id,
-                               tgt_district = args.tgt_district,
-                               save_path='../results/imgs')
-        print("Done. See results in 'results/imgs'")
+    # if args.generate_viz:
+    #     print("Generating visualization...")
+    #     district_visualization(id_network = args.id_network,
+    #                            id_exp = args.experiment_id,
+    #                            tgt_district = args.tgt_district,
+    #                            save_path='../results/imgs')
+    #     print("Done. See results in 'results/imgs'")
 
 if __name__ == "__main__":
     main()

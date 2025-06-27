@@ -1,6 +1,7 @@
 import torch.optim as optim
 import torch.nn as nn
 
+from tqdm import tqdm
 import copy
 # from utils.args import *
 from models.utils.federated_model import FederatedModel
@@ -134,8 +135,12 @@ class FPL(FederatedModel):
         loss_mse = nn.MSELoss()
         cu_info_loss = loss_mse(f_now.squeeze(0), mean_f_pos)
 
-        hierar_info_loss = xi_info_loss + cu_info_loss
-        return xi_info_loss
+        alfa = 0.2
+        hierar_info_loss = alfa * xi_info_loss + (1 - alfa)*cu_info_loss
+
+        # print(f"CL loss: {xi_info_loss.item():.3f}, Reg loss: {cu_info_loss.item():.3f}")
+
+        return hierar_info_loss, (xi_info_loss, cu_info_loss)
 
     def calculate_infonce(self, f_now, f_pos, f_neg):
         f_proto = torch.cat((f_pos, f_neg), dim=0)
@@ -251,6 +256,7 @@ class FPL(FederatedModel):
 
     def _train_net(self, index, model, train_loader, label_loader, reg_ratio=0.5, verbose=True):
         data_loader = model.prepare_data(X = train_loader, X_index = label_loader)
+
         model = model.to(self.device)
         model.train()
         model.initialize_optimizer()  # initializes if not already done
@@ -269,13 +275,16 @@ class FPL(FederatedModel):
             all_f = [item.detach() for item in all_f]
             mean_f = [item.detach() for item in mean_f]
 
-        # iterator = tqdm(range(self.local_epoch))
-        # for iter in iterator:
-        for iter_round in range(self.local_epoch):
+        iterator = tqdm(range(self.local_epoch))
+        for iter in iterator:
+        # for iter_round in range(self.local_epoch):
             agg_protos_label = {}
             epoch_loss = 0
             epoch_loss_MSE = 0
             epoch_loss_Info = 0
+            epoch_loss_reg = 0
+            epoch_loss_cl = 0
+
             for xb, ryb, yb, fyb, labels in data_loader:
                 xb = xb.to(self.device)
                 ryb = ryb.to(self.device)
@@ -292,46 +301,60 @@ class FPL(FederatedModel):
                 loss_MSE = (reg_ratio / 2) * loss_ry + (1 - reg_ratio) * loss_y + (reg_ratio / 2) * loss_fy
                 epoch_loss_MSE += loss_MSE.item()
 
-                # print(images.shape, labels.shape, lossCE.shape, type(lossCE))
 
                 if len(self.global_protos) == 0:
                     loss_InfoNCE = torch.tensor(0.0, requires_grad=True)
-
+                    cl_loss_total = 0.0
+                    reg_loss_total = 0.0
                 else:
                     i = 0
                     loss_InfoNCE = None
+                    cl_loss_total = 0.0
+                    reg_loss_total = 0.0
 
                     for label in labels:
                         if label.item() in self.global_protos.keys():
                             f_now = latent[i].unsqueeze(0)
-                            loss_instance = self.hierarchical_info_loss(f_now, label, all_f, mean_f,
+                            loss_instance, (cl_loss, reg_loss) = self.hierarchical_info_loss(f_now, label, all_f, mean_f,
                                                                         all_global_protos_keys)
 
                             if loss_InfoNCE is None:
-                                loss_InfoNCE = loss_instance.item()
+                                loss_InfoNCE = loss_instance
                             else:
-                                loss_InfoNCE += loss_instance.item()
+                                loss_InfoNCE += loss_instance
+                                cl_loss_total += cl_loss
+                                reg_loss_total += reg_loss
                         i += 1
                     loss_InfoNCE = loss_InfoNCE / i
+                    epoch_loss_cl += cl_loss_total.item() / i
+                    epoch_loss_reg += reg_loss_total.item() / i
 
 
                 loss = loss_MSE + loss_InfoNCE
 
-                epoch_loss_Info += loss_InfoNCE
-                epoch_loss += loss
-                # iterator.desc = "Local Pariticipant %d MSE = %0.3f,InfoNCE = %0.3f" % (index, loss_MSE, loss_InfoNCE)
+                epoch_loss_Info += loss_InfoNCE.item()
+
+                epoch_loss += loss.item()
+                iterator.set_description("Local Participant %d Loss = %.3f, MSE = %.3f, InfoNCE = %.3f" %
+                                         (index, loss.item(), loss_MSE.item(), loss_InfoNCE.item()))
 
                 loss.backward()
                 optimizer.step()
 
-                if iter_round == self.local_epoch - 1:
+                if iter == self.local_epoch - 1:
                     for i in range(len(labels)):
                         if labels[i].item() in agg_protos_label:
                             agg_protos_label[labels[i].item()].append(latent[i, :])
                         else:
                             agg_protos_label[labels[i].item()] = [latent[i, :]]
+
+            epoch_loss /= len(data_loader)
+            epoch_loss_MSE /= len(data_loader)
+            epoch_loss_Info /= len(data_loader)
+            epoch_loss_reg /= len(data_loader)
+            epoch_loss_cl /= len(data_loader)
     
-        model.fit_history.append((epoch_loss, epoch_loss_MSE, epoch_loss_Info))   
+            model.fit_history.append((epoch_loss, epoch_loss_MSE, epoch_loss_Info, epoch_loss_reg, epoch_loss_cl))
         
         self.debug_latent[index] = agg_protos_label.copy()
         agg_protos = agg_func(agg_protos_label)
@@ -354,5 +377,11 @@ class FPL(FederatedModel):
 
         results['global_weights_history'] = self.weight_history
         results['clients_weights_history'] = self.clients_models_history
+
+        aux_metrics = []
+        for model in self.nets_list:
+            aux_metrics.append(model.fit_history)
+
+        results['fit_history'] = aux_metrics
 
         return results

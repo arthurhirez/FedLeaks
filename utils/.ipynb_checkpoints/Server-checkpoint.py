@@ -49,7 +49,7 @@ def train(model: FederatedModel, private_dataset: FederatedDataset, scenario: st
         # print('COM AGREGAÇÃO')
         # local_evaluate(model = model, train_dl = priv_train_loaders[1], df_results = df_results, group_detections = True)
 
-    return priv_train_loaders, latent_history
+    # return priv_train_loaders, latent_history
 
 
 

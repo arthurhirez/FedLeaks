@@ -97,7 +97,16 @@ def main():
     
             data_latent = pd.concat(aux_latents)
             data_latent[['client_id', 'epoch']] = data_latent['label'].str.split('__', expand=True)
-            data_latent['label'] = data_latent['timestamp'].dt.month
+
+            # Extract year and month
+            years = data_latent['timestamp'].dt.year
+            months = data_latent['timestamp'].dt.month
+
+            # Compute base year from the minimum timestamp
+            base_year = data_latent['timestamp'].min().year
+
+            # Continuous month index
+            data_latent['label'] = (years - base_year) * 12 + (months - 1)
     
             id_cols = ['client_id', 'label', 'epoch']
             feat_cols = [col for col in data_latent.columns if 'x_' in col]
@@ -147,7 +156,7 @@ def main():
 
     
     for scenario in scenarios:
-        pd.concat(all_latents[scenario], ignore_index=True).to_parquet(f"{results_dir}/{scenario}_latent_space.parquet", index=False)
+        # pd.concat(all_latents[scenario], ignore_index=True).to_parquet(f"{results_dir}/{scenario}_latent_space.parquet", index=False) VOLTAR ESSE
         pd.concat(all_protos[scenario], ignore_index=True).to_parquet(f"{results_dir}/{scenario}_proto.parquet", index=False)
         # pd.concat(all_dists[scenario], ignore_index=True).to_parquet(f"{results_dir}/{scenario}_distribution.parquet", index=False)
     
@@ -170,26 +179,26 @@ def main():
         df_combined = combine_latents(results_dir)
         
         # Plot heatmap and save
-        plot_latent_heatmap(df_combined[~df_combined['label'].str.contains('proto')], results_dir)
+        # plot_latent_heatmap(df_combined[~df_combined['label'].str.contains('proto')], results_dir)  VOLTAR ESSE
         
         # Plot time-series and save
-        batch_temporal = (agg_int * args.window_size) / 24
-        plot_time_series_and_latents(df_combined[~df_combined['label'].str.contains('proto')],
-                                     scaled_df,  results_dir,
-                                     batch_temporal=batch_temporal)
+        # batch_temporal = (agg_int * args.window_size) / 24
+        # plot_time_series_and_latents(df_combined[~df_combined['label'].str.contains('proto')],
+        #                              scaled_df,  results_dir,
+        #                       tch_temporal=batch_temporal)
 
         
         df_exp_proto = pd.read_parquet(f'{results_dir}/Baseline_proto.parquet')
         int_cols = ['epoch', 'label']
-        for c in int_cols:
+        for c in int_cols:       
             df_exp_proto[c] = df_exp_proto[c].astype(int)
         plot_proto_similar(df_exp_proto, results_dir)
 
-        df_exp_latent = pd.read_parquet(f'{results_dir}/Baseline_distribution.parquet')
-        int_cols = ['epoch', 'label']
-        for c in int_cols:
-            df_exp_latent[c] = df_exp_latent[c].astype(int)
-        plot_distribution_similar(df_exp_latent, results_dir)
+        # df_exp_latent = pd.read_parquet(f'{results_dir}/Baseline_distribution.parquet')
+        # int_cols = ['epoch', 'label']
+        # for c in int_cols:
+        #     df_exp_latent[c] = df_exp_latent[c].astype(int)
+        # plot_distribution_similar(df_exp_latent, results_dir)
         
         print(f"Done. See results in '{results_dir}'")
 

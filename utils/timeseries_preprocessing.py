@@ -37,78 +37,92 @@ def intervals_to_mask(index, intervals):
     return np.array(mask)
 
 
-def rolling_window_sequences(X, index, window_size, target_size, step_size, target_column,
-                             offset=0, drop=None, drop_windows=False):
-    """Create rolling window sequences out of time series data.
-
-    The function creates an array of input sequences and an array of target sequences by rolling
-    over the input sequence with a specified window.
-    Optionally, certain values can be dropped from the sequences.
+def rolling_window_sequences(
+    X,
+    index,
+    window_size,
+    target_size,
+    step_size,
+    target_column,
+    offset=0,
+    drop=None,
+    drop_windows=False,
+    return_window_index=False,
+    return_center_index=False
+):
+    """
+    Create rolling window sequences from time series data.
 
     Args:
-        X (ndarray):
-            N-dimensional sequence to iterate over.
-        index (ndarray):
-            Array containing the index values of X.
-        window_size (int):
-            Length of the input sequences.
-        target_size (int):
-            Length of the target sequences.
-        step_size (int):
-            Indicating the number of steps to move the window forward each round.
-        target_column (int):
-            Indicating which column of X is the target.
-        offset (int):
-            Indicating the number of steps between the input and the target sequence.
-        drop (ndarray or None or str or float or bool):
-            Optional. Array of boolean values indicating which values of X are invalid, or value
-            indicating which value should be dropped. If not given, `None` is used.
-        drop_windows (bool):
-            Optional. Indicates whether the dropping functionality should be enabled. If not
-            given, `False` is used.
+        X (ndarray): Input data (N x D).
+        index (ndarray): Timestamps for each row in `X` (length N).
+        window_size (int): Number of steps per input window.
+        target_size (int): Number of steps in the target sequence.
+        step_size (int): Step size between windows.
+        target_column (int or list): Column(s) of X to use as target.
+        offset (int): Gap between input and target.
+        drop (ndarray, float, str, bool, or None): Optional drop mask or value.
+        drop_windows (bool): If True, drop windows with invalid values.
+        return_window_index (bool): If True, return full list of timestamps for each input window.
+        return_center_index (bool): If True, return center timestamp of each window.
 
     Returns:
-        ndarray, ndarray, ndarray, ndarray:
-            * input sequences.
-            * target sequences.
-            * first index value of each input sequence.
-            * first index value of each target sequence.
+        tuple: (X_seq, y_seq, X_index, y_index[, window_index][, center_index])
     """
-    out_X = list()
-    out_y = list()
-    X_index = list()
-    y_index = list()
-    target = X[:, target_column]
+    out_X = []
+    out_y = []
+    X_index = []
+    y_index = []
+    window_index = []
+    center_index = []
+
+    target = X[:, target_column] if isinstance(target_column, int) else X[:, target_column]
 
     if drop_windows:
-        if hasattr(drop, '__len__') and (not isinstance(drop, str)):
+        if hasattr(drop, '__len__') and not isinstance(drop, str):
             if len(drop) != len(X):
-                raise Exception('Arrays `drop` and `X` must be of the same length.')
+                raise ValueError("Length of `drop` must match X.")
         else:
-            if isinstance(drop, float) and np.isnan(drop):
-                drop = np.isnan(X)
-            else:
-                drop = X == drop
+            drop = np.isnan(X) if isinstance(drop, float) and np.isnan(drop) else X == drop
 
     start = 0
     max_start = len(X) - window_size - target_size - offset + 1
+
     while start < max_start:
         end = start + window_size
 
         if drop_windows:
             drop_window = drop[start:end + target_size]
-            to_drop = np.where(drop_window)[0]
-            if to_drop.size:
-                start += to_drop[-1] + 1
+            if np.any(drop_window):
+                start += np.where(drop_window)[0][-1] + 1
                 continue
 
         out_X.append(X[start:end])
         out_y.append(target[end + offset:end + offset + target_size])
-        X_index.append(index[start])
-        y_index.append(index[end + offset])
-        start = start + step_size
+        X_index.append(index[start])                 # Keep original X_index format
+        y_index.append(index[end + offset])          # Keep original y_index format
 
-    return np.asarray(out_X), np.asarray(out_y), np.asarray(X_index), np.asarray(y_index)
+        if return_window_index:
+            window_index.append(index[start:end])
+        if return_center_index:
+            center_index.append(index[start + window_size // 2])
+
+        start += step_size
+
+    result = [
+        np.array(out_X),
+        np.array(out_y),
+        np.array(X_index),
+        np.array(y_index)
+    ]
+
+    if return_window_index:
+        result.append(np.array(window_index))
+    if return_center_index:
+        result.append(np.array(center_index))
+
+    return tuple(result)
+
 
 
 def time_segments_aggregate(X, interval, time_column, method=['mean']):

@@ -48,8 +48,10 @@ def create_experiment_args() -> ArgumentParser:
 
 def add_simulation_args(parser: ArgumentParser) -> None:
     # Time variables
-    parser.add_argument('--n_segments', type=int, default=12,
+    parser.add_argument('--n_segments', type=int, default=24,
                         help='Number of urban growth simulation segments.')
+    parser.add_argument('--warm_up', type=int, default=4,
+                        help='Number of rounds without changes.')
     parser.add_argument('--epochs_lenght', type=int, default=6,
                         help='Number of epochs per simulation run.')
     parser.add_argument('--days_lenght', type=int, default=5,

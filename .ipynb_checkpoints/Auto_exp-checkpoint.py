@@ -2,6 +2,17 @@ import os
 
 from utils.conf import set_random_seed
 
+# parser.add_argument('--n_segments', type=int, default=24,
+#                     help='Number of urban growth simulation segments.')
+# parser.add_argument('--warm_up', type=int, default=4,
+#                     help='Number of rounds without changes.')
+# parser.add_argument('--epochs_lenght', type=int, default=6,
+#                     help='Number of epochs per simulation run.')
+# parser.add_argument('--days_lenght', type=int, default=5,
+#                     help='Number of days in each epoch.')
+# parser.add_argument('--n_intervals', type=int, default=24,
+#                     help='Number of time intervals per day.')
+
 
 def drift_id(tgt_district, seed_node, income_density_mapping, drift_income, drift_density):
     # 1. First part: first letter of tgt_district (e.g., "District_D" → "D")
@@ -32,62 +43,162 @@ seed_node = '2'
 
 
 income_density_mapping = ['ML_LM_LH_LL_LL', 'HL_LL_LL_LL_LH', 'LL_MH_LL_LL_LM', 'LM_LL_LH_LL_ML', 'ML_MM_HL_LL_LM'] #D
-
 income_density_mapping = ['LM_LH_LL_LL_LL', 'LH_LL_ML_HL_LL', 'HL_LH_LL_LM_LL', 'LL_MM_HL_LM_LL', 'HH_LH_ML_LM_LL']
-
 drift_income = ['low', 'low', 'medium', 'medium', 'high', 'high', 'high']
 drift_density = ['medium', 'high', 'low', 'high', 'low', 'medium', 'high']
 
 
-income_density_mapping = ['LL_MH_LL_LL_LM']
-drift_income = ['medium']
-drift_density = ['high']
+
+tgt_district = 'District_D'
+seed_node = '2'
+income_density_mapping = ['LM_LH_LL_LL_LL', 'LL_LL_LM_LH_LL', 'LM_LL_LM_LL_LL']
+
+income_density_mapping = ['HL_ML_LM_LH_LL', 'LH_HM_LM_MH_LL', 'MM_HL_LM_ML_LL', 'ML_HL_HM_LM_LL']
+
+income_density_mapping = ['HL_ML_LM_LH_LL', 'LH_HM_LM_MH_LL', 'MM_HL_LM_ML_LL', 'ML_HL_HM_LM_LL', 'LH_LL_LM_LL_LL', 'LM_LH_LL_LL_LL', 'LL_LM_LH_LL_LL',  'LL_LL_LM_LH_LL',]
+
+
+
+
+tgt_district = 'District_A'
+seed_node = '62'
+
+income_density_mapping = ['LL_LM_LH_LL_LL','LL_LH_LM_LL_LL','LL_LL_LL_LM_LH','LL_LL_LL_LH_LM','LL_LH_LL_LL_LM','LL_LL_LM_LH_LL','LL_LL_LH_LM_LL',
+                          'LL_HL_ML_LH_LL', 'LL_LH_HM_MH_ML', 'LL_MM_HL_ML_LM', 'LL_ML_HL_LM_HM']
+
+
+tgt_district = 'District_B'
+seed_node = '84'
+
+income_density_mapping = ['LM_LL_LH_LL_LL','LH_LL_LM_LL_LL','LL_LL_LL_LM_LH','LL_LL_LL_LH_LM','LH_LL_LL_LL_LM','LL_LL_LM_LH_LL','LL_LL_LH_LM_LL',
+                          'HL_LL_ML_LH_LL', 'LH_LL_HM_MH_ML', 'MM_LL_HL_ML_LM', 'ML_LL_HL_LM_HM']
+
+
+tgt_district = 'District_C'
+seed_node = '65'
+
+income_density_mapping = ['LM_LH_LL_LL_LL','LH_LM_LL_LL_LL','LL_LL_LL_LM_LH','LL_LL_LL_LH_LM','LH_LL_LL_LL_LM','LL_LM_LL_LH_LL','LL_LH_LL_LM_LL',
+                          'HL_ML_LL_LH_LL', 'LH_HM_LL_MH_ML', 'MM_HL_LL_ML_LM', 'ML_HL_LL_LM_HM']
+
+
+tgt_district = 'District_D'
+seed_node = '2'
+
+income_density_mapping = ['LM_LH_LL_LL_LL','LH_LM_LL_LL_LL','LL_LL_LM_LL_LH','LL_LL_LH_LL_LM','LH_LL_LL_LL_LM','LL_LM_LH_LL_LL','LL_LH_LM_LL_LL',
+                          'HL_ML_LH_LL_LL', 'LH_HM_MH_LL_ML', 'MM_HL_ML_LL_LM', 'ML_HL_LM_LL_HM']
+
+
+tgt_district = 'District_E'
+seed_node = '15'
+
+income_density_mapping = ['LM_LH_LL_LL_LL','LH_LM_LL_LL_LL','LL_LL_LM_LH_LL','LL_LL_LH_LM_LL','LH_LL_LL_LM_LL','LL_LM_LH_LL_LL','LL_LH_LM_LL_LL',
+                          'HL_ML_LH_LL_LL', 'LH_HM_MH_ML_LL', 'MM_HL_ML_LM_LL', 'ML_HL_LM_HM_LL']
+
+drift_income = ['low', 'low', 'medium']
+drift_density = ['medium', 'high', 'low']
+
+
+
+
+
+# NEW_TESTING
+tgt_district = 'District_A'
+seed_node = '62'
+
+income_density_mapping = [
+                            'MM_HL_LH_ML_LL',
+                            'HL_LH_LM_HH_HM',
+                            'MH_MM_LL_HL_HH',
+                            'LL_HM_LM_MM_LL',
+                            'HH_ML_LM_HL_LH',
+                            'ML_HH_LL_HM_MH',                 
+                         ]
+
+
+drift_income = ['high', 'high', 'high', 'medium', 'medium', 'medium', 'low']
+drift_density = ['low', 'medium', 'high', 'low', 'medium', 'high', 'low']
+
+
+
+# NEW_WINDOW / NEW_WINDOW_WEEKS
+tgt_district = 'District_A'
+seed_node = '62'
+
+income_density_mapping = ['LL_LM_LH_LL_LL','LL_LH_LM_LL_LL','LL_LL_LL_LM_LH','LL_LL_LL_LH_LM','LL_LH_LL_LL_LM','LL_LL_LM_LH_LL','LL_LL_LH_LM_LL',
+                          'LL_HL_ML_LH_LL', 'LL_LH_HM_MH_ML', 'LL_MM_HL_ML_LM', 'LL_ML_HL_LM_HM']
+
+
+drift_income = ['low', 'low', 'medium']
+drift_density = ['medium', 'high', 'low']
+
 
 
 # PROCESSES VARIABLES
 run_simulation = False
 federated_training = True
 process_latents = True
-generate_viz = False
+generate_viz = True
 
 # HYPERPARAMETERS
-comm_epoch = 20
-local_epoch = 2
-infoNCET = 0.20
+comm_epoch = 10
+local_epoch = 1
+infoNCET = 0.015
 LSTM_units = 20
 
-for i in range(10):
-    set_random_seed(i)
-    for DI, DD in zip(drift_income, drift_density):
-        for mapping in income_density_mapping:
-            exp_id = drift_id(tgt_district, seed_node, mapping, DI, DD)
-            exp_id += f'__{mapping}'
-            # exp_comments = f'proto_NCET{str(infoNCET).replace(".", "")}_LSTM{LSTM}'
-            exp_comments = f'proto_REP_{mapping}__{i}'
-            
-            cmd = (
-                f"python Run_Experiment.py "
-                f"--experiment_id {exp_id} "
-                f"--extra_coments {exp_comments} "
-                f"--seed {i*7} "
-                f"--communication_epoch {comm_epoch} "
-                f"--local_epoch {local_epoch} "
-                f"--infoNCET {infoNCET} "
-                f"--lstm_units {LSTM_units} "
-                f"--run_simulation {run_simulation} "
-                f"--federated_training {federated_training} "
-                f"--process_latents {process_latents} "
-                f"--generate_viz {generate_viz} "
-                f"--tgt_district {tgt_district} "
-                f"--seed_node {seed_node} "
-                f"--drift_income {DI} "
-                f"--drift_density {DD}"
-            )
-        
-            print(f"\nRunning command:\n{cmd}\n")
-            os.system(cmd)
-            
-    # run_simulation = False
+interval_agg = 2 * 3600
+window_size = 6
+step_size = 28
+
+
+# for i in range(1):
+#     set_random_seed(i*12)
+#     for interval in [2 * 3600, 6 * 3600, 12 * 3600]:
+#         for window in [12, 48, 144]:
+#             for step_size in [int(window / 4), int(window / 2), int(window * 0.75)]:
+                
+for i in range(1):
+    set_random_seed(i*12)
+    for interval in [12 * 3600]:
+        for window in [144]:
+            for step_size in [int(window / 4), int(window / 2), int(window * 0.75)]:
+                for DI, DD in zip(drift_income, drift_density):
+                    drift_ID = DI[0].capitalize() + DD[0].capitalize()
+                    for mapping in income_density_mapping:
+                        options = mapping.split('_')
+                        if drift_ID not in options:
+                            continue
+                            
+                        exp_id = drift_id(tgt_district, seed_node, mapping, DI, DD)
+                        exp_id += f'__{mapping}'
+                        # exp_comments = f'proto_NCET{str(infoNCET).replace(".", "")}_LSTM{LSTM}'
+                        exp_comments = f'NEW_WINDOW_{mapping}__{window}_{step_size}_{interval}___{i}'
+    
+                        cmd = (
+                            f"python Run_Experiment.py "
+                            f"--experiment_id {exp_id} "
+                            f"--extra_coments {exp_comments} "
+                            f"--seed {i*12} "
+                            f"--communication_epoch {comm_epoch} "
+                            f"--local_epoch {local_epoch} "
+                            f"--interval_agg {interval} "
+                            f"--window_size {window} "
+                            f"--step_size {step_size} "
+                            f"--infoNCET {infoNCET} "
+                            f"--lstm_units {LSTM_units} "
+                            f"--run_simulation {run_simulation} "
+                            f"--federated_training {federated_training} "
+                            f"--process_latents {process_latents} "
+                            f"--generate_viz {generate_viz} "
+                            f"--tgt_district {tgt_district} "
+                            f"--seed_node {seed_node} "
+                            f"--drift_income {DI} "
+                            f"--drift_density {DD}"
+                        )
+    
+                        print(f"\nRunning command:\n{cmd}\n")
+                        os.system(cmd)
+    
+                run_simulation = False
 
 
 

@@ -190,8 +190,8 @@ class FedLeaksGeo(FederatedDataset):
         context['index'] = idx_agg
 
         # Step 2: Rolling window
-        rolling_transform = self.get_rolling_window_transform(window_size=self.args.window_size)
-        X_seq, y_seq, X_idx, y_idx = rolling_transform(X_norm, idx_agg, target_columns)
+        rolling_transform = self.get_rolling_window_transform(window_size=self.args.window_size, step_size = self.args.step_size)
+        X_seq, y_seq, X_idx, y_idx, win_idx, center_idx = rolling_transform(X_norm, idx_agg, target_columns)
 
         # Step 3: Slice targets from sequence
         y_seq = slice_array_by_dims(X_seq, target_index=target_columns, axis=2)
@@ -201,6 +201,9 @@ class FedLeaksGeo(FederatedDataset):
         context['y'] = y_seq
         context['X_index'] = X_idx
         context['y_index'] = y_idx
+
+        context['win_idx'] = win_idx
+        context['center_idx'] = center_idx
 
         return context
 
@@ -271,7 +274,7 @@ class FedLeaksGeo(FederatedDataset):
         """
 
         def transform(X, index, target_columns):
-            X_seq, y_seq, X_idx, y_idx = rolling_window_sequences(
+            X_seq, y_seq, X_idx, y_idx, win_idx, center_idx = rolling_window_sequences(
                 X=X,
                 index=index,
                 window_size=window_size,
@@ -280,10 +283,13 @@ class FedLeaksGeo(FederatedDataset):
                 target_column=target_columns,
                 offset=offset,
                 drop=None,
-                drop_windows=False
+                drop_windows=False,
+                return_window_index=True,
+                return_center_index=True
             )
 
+
             y_seq = slice_array_by_dims(X=X_seq, target_index=target_columns, axis=2)
-            return X_seq, y_seq, X_idx, y_idx
+            return X_seq, y_seq, X_idx, y_idx, win_idx, center_idx
 
         return transform

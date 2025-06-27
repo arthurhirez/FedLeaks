@@ -79,6 +79,8 @@ def add_federated_args(parser: ArgumentParser) -> None:
                         help='Agregation interval (seconds) of time series')
     parser.add_argument('--window_size', type=int, default=84,
                         help='Rolling window length')
+    parser.add_argument('--step_size', type=int, default=1,
+                        help='Rolling window step size')
 
     # Model (AER) parameters
     parser.add_argument('--input_size', type=int, default=5,

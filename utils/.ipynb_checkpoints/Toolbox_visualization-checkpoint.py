@@ -214,10 +214,11 @@ def plot_proto_similar(df_exp_proto, results_dir):
     
     # Define interactive parameters
     cosine_param = alt.param(name='cosine', value=1, bind=cosine_slider)
-    manhattan_param = alt.param(name='manhattan', value=1, bind=manhattan_slider)
-    wavelet_param = alt.param(name='wavelet', value=1, bind=wavelet_slider)
-    dft_param = alt.param(name='dft', value=1, bind=dft_slider)
-    autocorr_param = alt.param(name='autocorr', value=1, bind=autocorr_slider)
+    manhattan_param = alt.param(name='manhattan', value=0, bind=manhattan_slider)
+    wavelet_param = alt.param(name='wavelet', value=0, bind=wavelet_slider)
+    dft_param = alt.param(name='dft', value=0, bind=dft_slider)
+    autocorr_param = alt.param(name='autocorr', value=0, bind=autocorr_slider)
+    
     epoch_select = alt.selection_point(fields=['epoch'], bind=epoch_slider, value=0)
     month_select = alt.selection_point(fields=['label'], bind=month_slider, value=1)
     client_select = alt.selection_point(fields=['client_1'], bind=client_dropdown, value = 'District_A')

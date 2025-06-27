@@ -18,10 +18,10 @@ def train(model: FederatedModel, private_dataset: FederatedDataset, scenario: st
     private_train_labels = []
     for loader in priv_train_loaders:
         private_train_loaders.append(loader['X'])
-        private_train_labels.append(loader['X_index'])
+        private_train_labels.append(loader['win_idx']) #X_index
 
     model.trainloaders = private_train_loaders  # TODO REVER ISSO!!!
-    model.trainlabels = loader['X_index']
+    model.trainlabels = loader['win_idx'] #X_index
     
     if hasattr(model, 'ini'):
         model.ini()
@@ -48,6 +48,7 @@ def train(model: FederatedModel, private_dataset: FederatedDataset, scenario: st
         # print(10*'**--')
         # print('COM AGREGAÇÃO')
         # local_evaluate(model = model, train_dl = priv_train_loaders[1], df_results = df_results, group_detections = True)
+
     # return priv_train_loaders, latent_history
 
 
