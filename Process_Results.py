@@ -156,7 +156,7 @@ def main():
 
     
     for scenario in scenarios:
-        # pd.concat(all_latents[scenario], ignore_index=True).to_parquet(f"{results_dir}/{scenario}_latent_space.parquet", index=False) VOLTAR ESSE
+        pd.concat(all_latents[scenario], ignore_index=True).to_parquet(f"{results_dir}/{scenario}_latent_space.parquet", index=False)
         pd.concat(all_protos[scenario], ignore_index=True).to_parquet(f"{results_dir}/{scenario}_proto.parquet", index=False)
         # pd.concat(all_dists[scenario], ignore_index=True).to_parquet(f"{results_dir}/{scenario}_distribution.parquet", index=False)
     
