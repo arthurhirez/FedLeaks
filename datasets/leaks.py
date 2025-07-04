@@ -1,4 +1,6 @@
 import os
+import glob
+
 import pandas as pd
 import numpy as np
 from sklearn.preprocessing import MinMaxScaler
@@ -143,6 +145,268 @@ class FedLeaksGeo(FederatedDataset):
         # Load the raw data and save individual files for each domain/client/scenario
         for _, domain in enumerate(using_list):
             builder = WaterLeakClientDatasetBuilder(id_network=domain, id_exp=self.EXPERIMENT_IDS[domain])
+            builder.load_data()
+            builder.build_and_save()
+            self.leaks_data[domain] = builder.get_data()  # for each domain holds a dict with clients/scenarios
+            self.leaks_labels[domain] = builder.get_labels()
+
+        traindls = []
+        for domain in self.leaks_data.values():
+            train_df = [
+                self.preprocess_series(series=client_dict[self.scenario])
+                for client_dict in domain.values()
+                # if scenario in client_dict
+            ]
+
+            traindls.append(train_df)
+
+        return [client for domain in traindls for client in domain]  # , testdls, federation#, train_dataset_list, test_dataset_list
+
+    # @staticmethod
+    def preprocess_series(self, series):
+        """
+        Full preprocessing pipeline: aggregation, normalization, rolling window.
+
+        Args:
+            series (pd.DataFrame): Raw time series with a 'timestamp' column.
+
+        Returns:
+            dict: A dictionary containing preprocessed data with keys:
+                  'X', 'y', 'X_index', 'y_index', etc.
+        """
+        context = {}
+
+        target_columns = [i for i in range(series.shape[1] - 1)]
+
+        # Step 0: Aggregate time series
+        aggregation_transform = self.get_aggregation_transform(interval=self.args.interval_agg)
+        X_agg, idx_agg = aggregation_transform(series)
+        context['X_raw'] = X_agg
+        # context['index_raw'] = idx_agg
+
+        # Step 1: Normalize
+        normalize_transform = self.get_normalization_transform()
+        X_norm = normalize_transform(X_agg)
+        context['X'] = X_norm
+        context['X_norm'] = X_norm
+        context['index'] = idx_agg
+
+        # Step 2: Rolling window
+        rolling_transform = self.get_rolling_window_transform(window_size=self.args.window_size, step_size = self.args.step_size)
+        X_seq, y_seq, X_idx, y_idx, win_idx, center_idx = rolling_transform(X_norm, idx_agg, target_columns)
+
+        # Step 3: Slice targets from sequence
+        y_seq = slice_array_by_dims(X_seq, target_index=target_columns, axis=2)
+
+        # Store all results in context
+        context['X'] = X_seq
+        context['y'] = y_seq
+        context['X_index'] = X_idx
+        context['y_index'] = y_idx
+
+        context['win_idx'] = win_idx
+        context['center_idx'] = center_idx
+
+        return context
+
+    def get_labels(self):
+        return self.leaks_labels
+
+    # @staticmethod
+    # TODO CORRIGIR PARAMETROS! ADICIRONAR CUSTOM DICT AQUI!
+    def get_backbone(self, parti_num, names_list, n_series):
+        nets_dict = {'aer': AER}
+        nets_list = []
+        if names_list is None:
+            for j in range(parti_num):
+                # TODO VERIFICAR CASOS EM QUE n_series É DIFERENTE!!
+                net = initizalize_backbone(args=self.args)
+                nets_list.append(net)
+        else:
+            for j in range(parti_num):
+                net_name = names_list[j]
+                nets_list.append(nets_dict[net_name]())
+        return nets_list
+
+    @staticmethod
+    def get_aggregation_transform(interval=3 * 60 ** 2, method='mean', time_column='timestamp'):
+        """
+        Returns a transform function that aggregates time series data.
+        """
+
+        def transform(series):
+            X, index = time_segments_aggregate(
+                X=series,
+                interval=interval,
+                time_column=time_column,
+                method=method
+            )
+            return X, index
+
+        return transform
+
+    # @staticmethod
+    def get_normalization_transform(self):
+        """
+        Fits and applies MinMaxScaler, returns the scaled data.
+        """
+
+        def normalize(X):
+            self.scaler = MinMaxScaler(feature_range=(-1, 1), copy=True)
+            return self.scaler.fit_transform(X)
+
+        return normalize
+
+    def get_denormalization_transform(self):
+        """
+        Returns a function that reverses MinMaxScaler transform using the instance's scaler.
+        """
+
+        def denormalize(X):
+            if not hasattr(self, 'scaler'):
+                raise ValueError("Scaler not found. You must call the normalization function first.")
+            return self.scaler.inverse_transform(X)
+
+        return denormalize
+
+    @staticmethod
+    def get_rolling_window_transform(window_size=100, target_size=1, step_size=1, offset=0):
+        """
+        Returns a transform function that applies rolling windows.
+        """
+
+        def transform(X, index, target_columns):
+            X_seq, y_seq, X_idx, y_idx, win_idx, center_idx = rolling_window_sequences(
+                X=X,
+                index=index,
+                window_size=window_size,
+                target_size=target_size,
+                step_size=step_size,
+                target_column=target_columns,
+                offset=offset,
+                drop=None,
+                drop_windows=False,
+                return_window_index=True,
+                return_center_index=True
+            )
+
+
+            y_seq = slice_array_by_dims(X=X_seq, target_index=target_columns, axis=2)
+            return X_seq, y_seq, X_idx, y_idx, win_idx, center_idx
+
+        return transform
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+class BenchmarkDatasetBuilder:
+    def __init__(self, id_network: str, id_exp: str, root_dir: str = "data_leaks"):
+        self.data = None
+        self.id_network = id_network
+        self.id_exp = id_exp
+        self.root_dir = root_dir
+        self.data_clients = {}
+        
+    def load_data(self):
+        # Step 1: Load all Excel files
+        file_paths = glob.glob('data_leaks/benchmark/test_guan/*.xlsx')
+        station_dfs = []
+        
+        for path in file_paths:
+            df = pd.read_excel(path)
+        
+            # Convert time to datetime
+            df['timestamp'] = pd.to_datetime(df['time'])
+        
+            # Get station_id (assume all rows in file have same value)
+            station_id = df['station_id'].iloc[0]
+        
+            # Create a new column: available = free / total
+            df[f'{station_id}'] = df['free'] / df['total']
+        
+            # Keep only relevant columns
+            df = df[['timestamp', f'{station_id}']]
+                
+            station_dfs.append(df)
+        
+        # Step 2: Combine all into one DataFrame (time index, station_id columns)
+        df_test = pd.concat(station_dfs, axis=1)
+        df_test = df_test.loc[:, ~df_test.columns.duplicated()]
+
+        df_test['timestamp'] = pd.to_datetime(df_test['timestamp'])
+
+        # Subtract the first timestamp and convert to seconds
+        df_test['timestamp'] = (df_test['timestamp'] - df_test['timestamp'].iloc[0]).dt.total_seconds().astype(int)
+
+        # Step 3: (Optional) Create timestep column based on 5-min intervals
+        # df_test = df_test.sort_index()
+
+        # Done!
+        self.data = df_test
+
+
+    def build_and_save(self, save_dir="datasets/benchmark"):
+        if self.data is None:
+            raise ValueError("Data not loaded. Call load_data() first.")
+
+        client_map = ['A', 'B', 'C', 'D', 'E']
+        for i, client in enumerate(self.data.columns[1:]):
+            self.data_clients[f"Client{client_map[i]}"] = {}
+
+            # Ensure output directory exists
+            client_save_dir = os.path.join(save_dir, self.id_network, self.id_exp)
+            os.makedirs(client_save_dir, exist_ok=True)
+
+            # Save to CSV
+            file_name = f"Client{client_map[i]}_Baseline.csv"
+            self.data[['timestamp', client]].to_csv(os.path.join(client_save_dir, file_name), index=False)
+            self.data_clients[f"Client{client_map[i]}"]['Baseline'] = self.data[['timestamp', client]]
+
+    def get_data(self):
+        return self.data_clients
+    
+    def get_labels(self):
+            return self.data_clients
+
+
+class FedBench(FederatedDataset):
+    NAME = 'benchmark'
+    SETTING = 'domain_skew'
+
+    def __init__(self, args):
+        super().__init__(args)
+        self.scenario = None
+        self.leaks_data = {}
+        self.leaks_labels = {}
+        self.scaler = None
+
+        self.CLIENTS_DICT = args.domains
+        self.DOMAINS_LIST = list(self.CLIENTS_DICT.keys())
+        self.EXP_ID = [args.experiment_id for _ in self.DOMAINS_LIST] if isinstance(args.experiment_id, str) else args.experiment_id
+        self.MAP_CLIENTS = [name for name, count in self.CLIENTS_DICT.items() for _ in range(count)]
+        self.EXPERIMENT_IDS = {D: E for D, E in zip(self.DOMAINS_LIST, self.EXP_ID)}
+
+
+
+    def get_data_loaders(self, selected_domain_list=[], scenario='Baseline'):
+
+        using_list = self.DOMAINS_LIST if len(selected_domain_list) == 0 else selected_domain_list
+        self.scenario = scenario
+
+        # TODO não acho que lista com dominios seja o melhor para os dloaders
+        # Load the raw data and save individual files for each domain/client/scenario
+        for _, domain in enumerate(using_list):
+            builder = BenchmarkDatasetBuilder(id_network=domain, id_exp=self.EXPERIMENT_IDS[domain])
             builder.load_data()
             builder.build_and_save()
             self.leaks_data[domain] = builder.get_data()  # for each domain holds a dict with clients/scenarios

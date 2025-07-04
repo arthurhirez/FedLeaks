@@ -170,6 +170,7 @@ federated_training = True
 process_latents = True
 generate_viz = True
 
+federated_training = False
 
 # drift_income = ['low', 'low']
 # drift_density = ['medium', 'high']

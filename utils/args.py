@@ -57,6 +57,7 @@ def create_experiment_args() -> ArgumentParser:
     parser.add_argument('--process_latents', type=str2bool, default=True)
     parser.add_argument('--detect_anomalies', type=str2bool, default=False)
     parser.add_argument('--generate_viz', type=str2bool, default=False)
+    parser.add_argument('--save_extras', type=str2bool, default=False)
 
     return parser
 

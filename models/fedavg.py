@@ -87,3 +87,17 @@ class FedAvG(FederatedModel):
             model.fit_history.append(epoch_loss)
 
         model.total_local_epoch += self.args.local_epoch
+
+    def compile_final_results(self):
+        results = {}
+
+        results['global_weights_history'] = self.weight_history
+        results['clients_weights_history'] = self.clients_models_history
+
+        aux_metrics = []
+        for model in self.nets_list:
+            aux_metrics.append(model.fit_history)
+
+        results['fit_history'] = aux_metrics
+
+        return results

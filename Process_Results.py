@@ -123,11 +123,12 @@ def main():
             df_exp_proto = pd.concat([df_exp_proto, aux_df[df_exp_proto.columns.tolist()]])
             df_exp_proto = df_exp_proto.sort_values(by=['epoch', 'label', 'client_1', 'client_2']).reset_index(drop=True)
             # df_exp_proto['id'] = tag
-            
-            # df_exp_latent = distributions_analysis(data_distribution=data_latent[id_cols + feat_cols],
-            #                                        target_client=args.tgt_district, epoch = epoch, normalize=True)
-            # df_exp_latent['id'] = tag
-    
+
+            if args.save_extras:
+                df_exp_latent = distributions_analysis(data_distribution=data_latent[id_cols + feat_cols],
+                                                       target_client=args.tgt_district, epoch = epoch, normalize=True)
+                # df_exp_latent['id'] = tag
+
             merged_latent = pd.concat([data_latent[['timestamp'] + id_cols + feat_cols], aux_agg])
             merged_latent = merged_latent.reset_index(drop=True)
     
@@ -152,13 +153,13 @@ def main():
                 all_latents[scenario].append(merged_latent)
     
             all_protos[scenario].append(df_exp_proto)
-            # all_dists[scenario].append(df_exp_latent)
+            if args.save_extras: all_dists[scenario].append(df_exp_latent)
 
     
     for scenario in scenarios:
         pd.concat(all_latents[scenario], ignore_index=True).to_parquet(f"{results_dir}/{scenario}_latent_space.parquet", index=False)
         pd.concat(all_protos[scenario], ignore_index=True).to_parquet(f"{results_dir}/{scenario}_proto.parquet", index=False)
-        # pd.concat(all_dists[scenario], ignore_index=True).to_parquet(f"{results_dir}/{scenario}_distribution.parquet", index=False)
+        if args.save_extras: pd.concat(all_dists[scenario], ignore_index=True).to_parquet(f"{results_dir}/{scenario}_distribution.parquet", index=False)
     
         if args.generate_viz:
             pd.concat(all_pca[scenario], ignore_index=True).to_parquet(f"{results_dir}/{scenario}_pca.parquet", index=False)
@@ -177,15 +178,15 @@ def main():
         
         # Combine all latent outputs
         df_combined = combine_latents(results_dir)
-        
-        # Plot heatmap and save
-        # plot_latent_heatmap(df_combined[~df_combined['label'].str.contains('proto')], results_dir)  VOLTAR ESSE
-        
-        # Plot time-series and save
-        # batch_temporal = (agg_int * args.window_size) / 24
-        # plot_time_series_and_latents(df_combined[~df_combined['label'].str.contains('proto')],
-        #                              scaled_df,  results_dir,
-        #                       tch_temporal=batch_temporal)
+
+        if args.save_extras:
+            # Plot heatmap and save
+            plot_latent_heatmap(df_combined[~df_combined['label'].str.contains('proto')], results_dir)
+
+            # Plot time-series and save
+            batch_temporal = (agg_int * args.window_size) / 24
+            plot_time_series_and_latents(df_combined[~df_combined['label'].str.contains('proto')],
+                                         scaled_df,  results_dir,batch_temporal=batch_temporal)
 
         
         df_exp_proto = pd.read_parquet(f'{results_dir}/Baseline_proto.parquet')
@@ -194,11 +195,12 @@ def main():
             df_exp_proto[c] = df_exp_proto[c].astype(int)
         plot_proto_similar(df_exp_proto, results_dir)
 
-        # df_exp_latent = pd.read_parquet(f'{results_dir}/Baseline_distribution.parquet')
-        # int_cols = ['epoch', 'label']
-        # for c in int_cols:
-        #     df_exp_latent[c] = df_exp_latent[c].astype(int)
-        # plot_distribution_similar(df_exp_latent, results_dir)
+        if args.save_extras:
+            df_exp_latent = pd.read_parquet(f'{results_dir}/Baseline_distribution.parquet')
+            int_cols = ['epoch', 'label']
+            for c in int_cols:
+                df_exp_latent[c] = df_exp_latent[c].astype(int)
+            plot_distribution_similar(df_exp_latent, results_dir)
         
         print(f"Done. See results in '{results_dir}'")
 

@@ -316,10 +316,10 @@ def plot_distribution_similar(df_exp_latent, results_dir):
     
     # Convert similarity to dissimilarity
     df['SubspaceDiss'] = 1 - df['SubspaceAlignment']
-    df['MutualInfoDiss'] = 1 - df['MutualInfo']
+    # df['MutualInfoDiss'] = 1 - df['MutualInfo']
     
     # --- Define Metric Weights ---
-    metrics = ['MMD', 'Wasserstein', 'Energy', 'SubspaceDiss', 'DTW', 'MutualInfoDiss', 'KL', 'JSD']
+    metrics = ['MMD', 'Wasserstein', 'Energy', 'SubspaceDiss', 'DTW', 'KL', 'JSD']
     bindings = {m: alt.binding_range(min=0, max=2, step=0.05, name=m) for m in metrics}
     params = [alt.param(name=m, value=0.2, bind=b) for m, b in bindings.items()]
     

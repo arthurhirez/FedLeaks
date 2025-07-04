@@ -98,6 +98,7 @@ def main():
             '--input_size', str(args.input_size),
             '--tgt_district', str(args.tgt_district),
             '--generate_viz', str(args.generate_viz),
+            '--save_extras', str(args.save_extras),
         ]
         print("Running command:", cmd)
         subprocess.run(cmd, check=True)

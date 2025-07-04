@@ -183,7 +183,7 @@ def distributions_analysis(data_distribution, target_client="District_E", epoch 
             dtw_val, _ = fastdtw(traj_target[:min_len], traj_other[:min_len], dist=cosine)
 
             # 4. Mutual Information
-            mi = compute_mi(df, target_client, other_client, month, features)
+            # mi = compute_mi(df, target_client, other_client, month, features)
 
             # 5. KL & JSD
             kl = compute_kl_divergence(X_target, X_other)
@@ -200,7 +200,7 @@ def distributions_analysis(data_distribution, target_client="District_E", epoch 
                 "Energy": e_dist,
                 "SubspaceAlignment": sa,
                 "DTW": dtw_val,
-                "MutualInfo": mi,
+                # "MutualInfo": mi,
                 "KL": kl,
                 "JSD": jsd,
             })
@@ -211,7 +211,7 @@ def distributions_analysis(data_distribution, target_client="District_E", epoch 
     if normalize:
         metric_cols = [
             "MMD", "Wasserstein", "Energy", "SubspaceAlignment",
-            "DTW", "MutualInfo", "KL", "JSD",
+            "DTW", "KL", "JSD",
         ]
         scaler = MinMaxScaler()
         df_results[metric_cols] = scaler.fit_transform(df_results[metric_cols])
