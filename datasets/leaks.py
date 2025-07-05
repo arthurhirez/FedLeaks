@@ -369,8 +369,8 @@ class BenchmarkDatasetBuilder:
 
             # Save to CSV
             file_name = f"Client{client_map[i]}_Baseline.csv"
-            self.data[['timestamp', client]].to_csv(os.path.join(client_save_dir, file_name), index=False)
-            self.data_clients[f"Client{client_map[i]}"]['Baseline'] = self.data[['timestamp', client]]
+            self.data[['timestamp', client, client]].to_csv(os.path.join(client_save_dir, file_name), index=False)
+            self.data_clients[f"Client{client_map[i]}"]['Baseline'] = self.data[['timestamp', client, client]]
 
     def get_data(self):
         return self.data_clients

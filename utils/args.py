@@ -70,10 +70,10 @@ def add_federated_args(parser: ArgumentParser) -> None:
                         help='The Local Epoch for each Participant')
 
     # Data parameter
-    parser.add_argument('--dataset', type=str, default='fl_leaks', choices=DATASET_NAMES,
-                        help='Which scenario to perform experiments on.')
-    parser.add_argument('--domains', type=dict, default={'Graeme': 5}, # TODO REFACTOR TYPE
-                        help='Domains and respective number of participants.')
+    parser.add_argument('--dataset', type=str, default='benchmark', choices=DATASET_NAMES,
+                        help='Which scenario to perform experiments on.') #fl_leaks
+    parser.add_argument('--domains', type=dict, default={'Benchmark': 5}, # TODO REFACTOR TYPE
+                        help='Domains and respective number of participants.') #Graeme
 
     ## Time series preprocessing
     parser.add_argument('--interval_agg', type=int, default=2 * 60 ** 2,

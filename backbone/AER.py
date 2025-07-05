@@ -139,6 +139,7 @@ class AER(nn.Module):
         # label = month.to_numpy()
         # label_tensor = torch.tensor(label, dtype=torch.int64)  # or float32 if needed
 
+
         labels, mask = get_majority_month_label(windows_timestamps=X_index, threshold=0.75)
 
         label_filtered = [l for l in labels if l is not None]
@@ -598,43 +599,103 @@ def score_anomalies(y: ndarray, ry_hat: ndarray, y_hat: ndarray, fy_hat: ndarray
     return scores
 
 
-def get_majority_month_label(windows_timestamps, threshold=0.7):
+
+
+
+def get_majority_month_label(windows_timestamps, threshold=0.7, mode='week'):
     """
-    Assign continuous month labels (e.g., Jan Year 0 = 0, Jan Year 1 = 12)
-    based on majority in each window.
+    Assign continuous time labels based on majority in each window.
+    Supports 'month' or 'week' modes.
 
     Parameters:
         windows_timestamps: array-like of shape (num_windows, window_size)
-        threshold: float - required fraction of timestamps in one month
+        threshold: float - required fraction of timestamps in one month/week
+        mode: str - 'month' or 'week'
 
     Returns:
-        labels: list of int (continuous month indices) or None if threshold not met
+        labels: list of int (continuous indices) or None if threshold not met
         mask: numpy array of bool, True where threshold met
     """
     labels = []
     mask = []
 
-    # Flatten all timestamps to find the earliest year
+    # Flatten all timestamps to find the base time (year)
     all_timestamps = np.concatenate(windows_timestamps)
     all_datetimes = pd.to_datetime(all_timestamps, unit='s')
-    base_year = all_datetimes.min().year
+
+    if mode == 'month':
+        base_year = all_datetimes.min().year
+    elif mode == 'week':
+        base_year = all_datetimes.isocalendar().year.min()
+    else:
+        raise ValueError("Mode must be either 'month' or 'week'.")
 
     for window in windows_timestamps:
         dt_index = pd.to_datetime(window, unit='s')
-        months = dt_index.month
-        years = dt_index.year
-        # Continuous month index
-        continuous_months = (years - base_year) * 12 + (months - 1)
 
-        counts = Counter(continuous_months)
-        majority_month, majority_count = counts.most_common(1)[0]
+        if mode == 'month':
+            months = dt_index.month
+            years = dt_index.year
+            continuous_index = (years - base_year) * 12 + (months - 1)
+
+        elif mode == 'week':
+            iso = dt_index.isocalendar()
+            weeks = iso.week
+            years = iso.year
+            continuous_index = (years - base_year) * 52 + (weeks - 1)
+
+        counts = Counter(continuous_index)
+        majority_value, majority_count = counts.most_common(1)[0]
         fraction = majority_count / len(window)
 
         if fraction >= threshold:
-            labels.append(majority_month)
+            labels.append(majority_value)
             mask.append(True)
         else:
             labels.append(None)
             mask.append(False)
 
     return labels, np.array(mask)
+
+
+
+# def get_majority_month_label(windows_timestamps, threshold=0.7):
+#     """
+#     Assign continuous month labels (e.g., Jan Year 0 = 0, Jan Year 1 = 12)
+#     based on majority in each window.
+#
+#     Parameters:
+#         windows_timestamps: array-like of shape (num_windows, window_size)
+#         threshold: float - required fraction of timestamps in one month
+#
+#     Returns:
+#         labels: list of int (continuous month indices) or None if threshold not met
+#         mask: numpy array of bool, True where threshold met
+#     """
+#     labels = []
+#     mask = []
+#
+#     # Flatten all timestamps to find the earliest year
+#     all_timestamps = np.concatenate(windows_timestamps)
+#     all_datetimes = pd.to_datetime(all_timestamps, unit='s')
+#     base_year = all_datetimes.min().year
+#
+#     for window in windows_timestamps:
+#         dt_index = pd.to_datetime(window, unit='s')
+#         months = dt_index.month
+#         years = dt_index.year
+#         # Continuous month index
+#         continuous_months = (years - base_year) * 12 + (months - 1)
+#
+#         counts = Counter(continuous_months)
+#         majority_month, majority_count = counts.most_common(1)[0]
+#         fraction = majority_count / len(window)
+#
+#         if fraction >= threshold:
+#             labels.append(majority_month)
+#             mask.append(True)
+#         else:
+#             labels.append(None)
+#             mask.append(False)
+#
+#     return labels, np.array(mask)
