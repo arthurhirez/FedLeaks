@@ -57,6 +57,7 @@ def create_experiment_args() -> ArgumentParser:
     parser.add_argument('--process_latents', type=str2bool, default=True)
     parser.add_argument('--detect_anomalies', type=str2bool, default=False)
     parser.add_argument('--generate_viz', type=str2bool, default=False)
+    parser.add_argument('--save_extras', type=str2bool, default=False)
 
     return parser
 
@@ -70,15 +71,17 @@ def add_federated_args(parser: ArgumentParser) -> None:
 
     # Data parameter
     parser.add_argument('--dataset', type=str, default='fl_leaks', choices=DATASET_NAMES,
-                        help='Which scenario to perform experiments on.')
+                        help='Which scenario to perform experiments on.') #fl_leaks
     parser.add_argument('--domains', type=dict, default={'Graeme': 5}, # TODO REFACTOR TYPE
-                        help='Domains and respective number of participants.')
+                        help='Domains and respective number of participants.') #Graeme
 
     ## Time series preprocessing
     parser.add_argument('--interval_agg', type=int, default=2 * 60 ** 2,
                         help='Agregation interval (seconds) of time series')
     parser.add_argument('--window_size', type=int, default=84,
                         help='Rolling window length')
+    parser.add_argument('--step_size', type=int, default=1,
+                        help='Rolling window step size')
 
     # Model (AER) parameters
     parser.add_argument('--input_size', type=int, default=5,

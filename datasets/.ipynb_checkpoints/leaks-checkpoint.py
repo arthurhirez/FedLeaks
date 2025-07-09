@@ -319,53 +319,94 @@ class BenchmarkDatasetBuilder:
         
     def load_data(self):
         # Step 1: Load all Excel files
-        file_paths = glob.glob('data_leaks/benchmark/test_guan/*.xlsx')
-        station_dfs = []
-        
-        for path in file_paths:
-            df = pd.read_excel(path)
-        
-            # Convert time to datetime
-            df['timestamp'] = pd.to_datetime(df['time'])
-        
-            # Get station_id (assume all rows in file have same value)
-            station_id = df['station_id'].iloc[0]
-        
-            # Create a new column: available = free / total
-            df[f'{station_id}'] = df['free'] / df['total']
-        
-            # Keep only relevant columns
-            df = df[['timestamp', f'{station_id}']]
-                
-            station_dfs.append(df)
-        
-        # Step 2: Combine all into one DataFrame (time index, station_id columns)
-        df_test = pd.concat(station_dfs, axis=1)
-        df_test = df_test.loc[:, ~df_test.columns.duplicated()]
-        
-        # Step 3: (Optional) Create timestep column based on 5-min intervals
-        # df_test = df_test.sort_index()
+        if self.id_network == 'Benchmark_energy':
+            station_dfs = []
+            file_paths = glob.glob(f'data_leaks/benchmark/energy/{self.id_exp}/*.csv')
+            for path in file_paths:
+                df = pd.read_csv(path)
+                id = path[-5:].replace('.csv', '')
+                df['id'] = id
+                station_dfs.append(df)
+            print(df.shape, path)
+            self.data = pd.concat(station_dfs)
 
-        # Done!
-        self.data = df_test
+        else:
+
+            station_dfs = []
+            for case in ['train', 'test']:
+
+                # Step 1: Load all Excel files
+                file_paths = glob.glob(f'data_leaks/benchmark/{case}_guan/*.xlsx')
+
+                for path in file_paths:
+                    df = pd.read_excel(path)
+
+                    # Convert time to datetime
+                    df['timestamp'] = pd.to_datetime(df['time'])
+
+                    # Get station_id (assume all rows in file have same value)
+                    station_id = df['station_id'].iloc[0]
+
+                    # Create a new column: available = free / total
+                    df[f'{station_id}'] = df['free'] / df['total']
+
+                    # Keep only relevant columns
+                    df = df[['timestamp', f'{station_id}']]
+
+                    station_dfs.append(df)
+
+            # Step 2: Combine all into one DataFrame (time index, station_id columns)
+            df_test = pd.concat(station_dfs, axis=1)
+            df_test = df_test.loc[:, ~df_test.columns.duplicated()]
+
+            df_test['timestamp'] = pd.to_datetime(df_test['timestamp'])
+
+            # Subtract the first timestamp and convert to seconds
+            df_test['timestamp'] = (df_test['timestamp'] - df_test['timestamp'].iloc[0]).dt.total_seconds().astype(int)
+
+
+            self.data = df_test
 
 
     def build_and_save(self, save_dir="datasets/benchmark"):
         if self.data is None:
             raise ValueError("Data not loaded. Call load_data() first.")
 
-        client_map = ['A', 'B', 'C', 'D', 'E']
-        for i, client in enumerate(self.data.columns[1:]):
-            self.data_clients[f"Client{client_map[i]}"] = {}
+        if self.id_network == 'Benchmark_energy':
+            client_map = ['A', 'B', 'C', 'D', 'E']
 
-            # Ensure output directory exists
-            client_save_dir = os.path.join(save_dir, self.id_network, self.id_exp)
-            os.makedirs(client_save_dir, exist_ok=True)
+            data_clients = {}
+            for id in client_map:
+                self.data_clients[f"Client{id}"] = {}
 
-            # Save to CSV
-            file_name = f"Client{client_map[i]}_Baseline.csv"
-            self.data[['timestamp', client]].to_csv(os.path.join(client_save_dir, file_name), index=False)
-            self.data_clients[f"Client{client_map[i]}"]['Baseline'] = self.data[['timestamp', client]]
+                # Ensure output directory exists
+                client_save_dir = os.path.join(save_dir, self.id_network, self.id_exp)
+                os.makedirs(client_save_dir, exist_ok=True)
+
+                # Save to CSV
+                file_name = f"Client{id}_Baseline.csv"
+                self.data_clients[f"Client{id}"]['Baseline'] = self.data[self.data['id'] == id].drop(columns=['id'])
+                self.data_clients[f"Client{id}"]['Baseline'].to_csv(os.path.join(client_save_dir, file_name), index=False)
+        else:
+            client_map = ['A', 'B', 'C', 'D', 'E']
+            sensor_map = [
+                ['42945', '85295', '87579', '87587', '87588'],
+                ['43823', '87581', '89449', '89450', '89453'],
+                ['36284', '37402', '43821', '80134', '80459'],
+                ['40575', '42149', '42760', '43976', '88842'],
+                ['80458', '89451', '86229', '43989', '72022']
+            ]
+            for id, sensors in zip(client_map, sensor_map):
+                self.data_clients[f"Client{id}"] = {}
+
+                # Ensure output directory exists
+                client_save_dir = os.path.join(save_dir, self.id_network, self.id_exp)
+                os.makedirs(client_save_dir, exist_ok=True)
+
+                # Save to CSV
+                file_name = f"Client{id}_Baseline.csv"
+                self.data[['timestamp'] + sensors].to_csv(os.path.join(client_save_dir, file_name), index=False)
+                self.data_clients[f"Client{id}"]['Baseline'] = self.data[['timestamp'] + sensors]
 
     def get_data(self):
         return self.data_clients

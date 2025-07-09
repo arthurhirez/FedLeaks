@@ -87,7 +87,7 @@ def main():
     if args.process_latents:
         cmd = [
             sys.executable,
-            'Process_Results_Bench.py',
+            'Process_Results.py',
             '--experiment_id', str(args.experiment_id),
             '--extra_coments', str(args.extra_coments),
             '--interval_agg', str(args.interval_agg),

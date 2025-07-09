@@ -139,8 +139,7 @@ class AER(nn.Module):
         # label = month.to_numpy()
         # label_tensor = torch.tensor(label, dtype=torch.int64)  # or float32 if needed
 
-
-        labels, mask = get_majority_month_label(windows_timestamps=X_index, threshold=0.75)
+        labels, mask = get_majority_month_label(windows_timestamps=X_index, threshold=0.75, mode = 'month')
 
         label_filtered = [l for l in labels if l is not None]
         label_tensor = torch.tensor(label_filtered, dtype=torch.int64)
