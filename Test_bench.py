@@ -26,10 +26,10 @@ step_size = 1
 i = 0
 set_random_seed(i*12)
 
-file_paths = glob.glob(f'data_leaks/benchmark/energy/P*')
+file_paths = glob.glob(f'data_leaks/benchmark/energy/R*')
 
-for window in [21, 14, 7]:
-    for interval in [2*86400, 7*86400]:
+for window in [30]:
+    for interval in [86400]:
         for file in file_paths:
             exp_id = file[-14:]
             n_feats = int(exp_id[-6]) + 1
