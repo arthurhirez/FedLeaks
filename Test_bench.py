@@ -14,10 +14,10 @@ save_extras = False
 
 
 # HYPERPARAMETERS
-comm_epoch = 5
+comm_epoch = 3
 local_epoch = 2
-infoNCET = 0.015
-LSTM_units = 20
+infoNCET = 0.02
+LSTM_units = 30
 
 interval = 86400
 window = 84
@@ -26,15 +26,29 @@ step_size = 1
 i = 0
 set_random_seed(i*12)
 
-file_paths = glob.glob(f'data_leaks/benchmark/energy/R*')
 
-for window in [30]:
-    for interval in [86400]:
+file_paths_a = glob.glob(f'data_leaks/benchmark/energy/R*')
+file_paths_b = glob.glob(f'data_leaks/benchmark/energy/P*')
+
+# file_paths = [f for f in file_paths if 's+' in f]
+# file_paths = [f for f in file_paths if '2_' not in f]
+
+file_paths = file_paths_a + file_paths_b
+
+for i in range(2, 7):
+    file_paths = [f for f in file_paths if f'{i}feats' not in f]
+
+file_paths = [f for f in file_paths if '0_' in f]
+
+interval = 86400
+
+for window in [10]:
+    for LSTM_units in [30, 40, 20]:
         for file in file_paths:
             exp_id = file[-14:]
             n_feats = int(exp_id[-6]) + 1
 
-            exp_comments = f'BENCHMARK_ENERGY_2018___{window}_{step_size}_{interval}___{i}'
+            exp_comments = f'BENCHMARK_ENERGY_FINAL_AGORAVAI_2018___{window}_{LSTM_units}_{interval}___{i}'
             cmd = (
                 f"python Run_Experiment_Bench.py "
                 f"--experiment_id {exp_id} "

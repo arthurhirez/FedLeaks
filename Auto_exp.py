@@ -238,6 +238,18 @@ communication = [5, 10]
 local = [2, 1]
 
 
+
+drifts = [
+    ['LL_ML_HL_LL_LL','LL_HL_ML_LL_LL','LL_LL_LL_ML_HL','LL_LL_LL_HL_ML','LL_HL_LL_LL_ML','LL_LL_ML_HL_LL','LL_LL_HL_ML_LL'],
+['ML_LL_HL_LL_LL','HL_LL_ML_LL_LL','LL_LL_LL_ML_HL','LL_LL_LL_HL_ML','HL_LL_LL_LL_ML','LL_LL_ML_HL_LL','LL_LL_HL_ML_LL'],
+['ML_HL_LL_LL_LL','HL_ML_LL_LL_LL','LL_LL_LL_ML_HL','LL_LL_LL_HL_ML','HL_LL_LL_LL_ML','LL_ML_LL_HL_LL','LL_HL_LL_ML_LL'],
+['ML_HL_LL_LL_LL','HL_ML_LL_LL_LL','LL_LL_ML_LL_HL','LL_LL_HL_LL_ML','HL_LL_LL_LL_ML','LL_ML_HL_LL_LL','LL_HL_ML_LL_LL'],
+['ML_HL_LL_LL_LL','HL_ML_LL_LL_LL','LL_LL_ML_HL_LL','LL_LL_HL_ML_LL','HL_LL_LL_ML_LL','LL_ML_HL_LL_LL','LL_HL_ML_LL_LL']]
+
+
+drift_income = ['medium', 'high']
+drift_density = ['low', 'low']
+
 # PROCESSES VARIABLES
 run_simulation = False
 federated_training = True
@@ -245,11 +257,16 @@ process_latents = True
 generate_viz = False
 
 
+communication = [5]
+local = [2]
+
+
+
 for i in range(1):
     set_random_seed(i*12)
-    for window in [12, 48, 84]:
-        for comm_epoch, local_epoch in zip(communication, local):
-            for LSTM_units in [10, 30, 40, 60]:
+    for comm_epoch, local_epoch in zip(communication, local):
+        for window in [12]:
+            for LSTM_units in [10]: #[30, 60]
                 for infoNCET in [0.05, 0.1, 0.2, 0.4]:
                     for DI, DD in zip(drift_income, drift_density):
                         drift_ID = DI[0].capitalize() + DD[0].capitalize()
@@ -262,7 +279,7 @@ for i in range(1):
                                 exp_id = drift_id(tgt_district, seed_node, mapping, DI, DD)
                                 exp_id += f'__{mapping}'
                                 # exp_comments = f'proto_NCET{str(infoNCET).replace(".", "")}_LSTM{LSTM}'
-                                exp_comments = f'EXPERIMENT_HYPER_{mapping}__{window}_{step_size}_{interval}_{LSTM_units}_{infoNCET}___{i}'
+                                exp_comments = f'EXPERIMENT_HYPER_INCOME_{mapping}__{window}_{step_size}_{interval}_{LSTM_units}_{infoNCET}___{i}'
 
                                 cmd = (
                                     f"python Run_Experiment.py "
