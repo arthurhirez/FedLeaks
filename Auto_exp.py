@@ -266,7 +266,7 @@ for i in range(1):
     set_random_seed(i*12)
     for comm_epoch, local_epoch in zip(communication, local):
         for window in [12]:
-            for LSTM_units in [10]: #[30, 60]
+            for LSTM_units in [60]: #[30, 60]
                 for infoNCET in [0.05, 0.1, 0.2, 0.4]:
                     for DI, DD in zip(drift_income, drift_density):
                         drift_ID = DI[0].capitalize() + DD[0].capitalize()
