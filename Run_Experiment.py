@@ -1,9 +1,10 @@
+import os
 import pickle
 import subprocess
 import sys
 import warnings
 from argparse import Namespace
-import os
+
 from datasets import get_private_dataset
 from models import get_model
 from utils.Server import train
@@ -12,6 +13,7 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 
 from utils.args import create_experiment_args, add_federated_args
 from utils.conf import set_random_seed
+
 
 def get_parser() -> Namespace:
     parser = create_experiment_args()
@@ -33,7 +35,7 @@ def main():
         args.parti_num = sum(args.domains.values())
 
     set_random_seed(args.seed)
-    
+
     # If run_simulation is True, execute the Pipeline_Simulation script
     if args.run_simulation:
         subprocess.run([
@@ -49,39 +51,39 @@ def main():
 
     if args.federated_training:
         results = {}
-    
+
         for scenario in ['Baseline']:  # , 'AutoScenario_1']:
             results[scenario] = {}
-    
+
             priv_dataset = get_private_dataset(args)
-    
+
             backbones_list = priv_dataset.get_backbone(
                 parti_num=args.parti_num,
                 names_list=None,
                 n_series=args.input_size
             )
-    
+
             model = get_model(backbones_list, args, priv_dataset)
-    
+
             train(model=model,
                   private_dataset=priv_dataset,
                   scenario=scenario,
                   args=args
                   )
-    
+
             results[scenario]['model'] = model.compile_final_results()
             results[scenario]['args'] = args
-    
+
         agg_int = int(args.interval_agg / 3600)
         results_id = f'{args.experiment_id}_{args.communication_epoch}_{args.local_epoch}_{agg_int}_{args.window_size}_{args.extra_coments}'
-        
+
         results_dir = f"results/{results_id}"
         os.makedirs(results_dir, exist_ok=True)
-    
+
         results_path = f"{results_dir}/results.pkl"
         with open(results_path, 'wb') as f:
             pickle.dump(results, f)
-    
+
         print("Train process finished.\nLog files saved in results directory.")
 
     if args.process_latents:
