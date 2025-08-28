@@ -1,3 +1,4 @@
+
 import copy
 import random
 from collections import defaultdict
@@ -135,7 +136,6 @@ def generate_consumption_patterns(data_consumption,
 
 
             if density == 'low':
-                
                 if random.random() < 0.10:
                     noisy_peaks = add_noise_with_lower_bound(base_values=base_peaks,
                                                              scale=0.10,

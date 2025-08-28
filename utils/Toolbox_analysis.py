@@ -28,33 +28,33 @@ def process_latent_df(df_latent, umap_neighbors=50, umap_min_dist=0.95, reduce_r
     X_pca_scaled, X_umap_scaled = reduce_dims(
         X=X_scaled,
         method=None,
-        n_components=2,
+        n_components=3,
         umap_neighbors=umap_neighbors,
         umap_min_dist=umap_min_dist
     )
 
     if id_cols is None:
-        df_pca_scaled = pd.DataFrame(X_pca_scaled, columns=['latent_x', 'latent_y'])
-        df_umap_scaled = pd.DataFrame(X_umap_scaled, columns=['latent_x', 'latent_y'])
+        df_pca_scaled = pd.DataFrame(X_pca_scaled, columns=['latent_x', 'latent_y', 'latent_z'])
+        df_umap_scaled = pd.DataFrame(X_umap_scaled, columns=['latent_x', 'latent_y', 'latent_z'])
     else:
         df_pca_scaled = df_latent[id_cols].copy()
-        df_pca_scaled[['latent_x', 'latent_y']] = X_pca_scaled
+        df_pca_scaled[['latent_x', 'latent_y', 'latent_z']] = X_pca_scaled
 
         df_umap_scaled = df_latent[id_cols].copy()
-        df_umap_scaled[['latent_x', 'latent_y']] = X_umap_scaled
+        df_umap_scaled[['latent_x', 'latent_y', 'latent_z']] = X_umap_scaled
         
     if reduce_raw:
         # Dimensionality reduction
         X_pca_raw, X_umap_raw = reduce_dims(
             X=X_raw,
             method=None,
-            n_components=2,
+            n_components=3,
             umap_neighbors=umap_neighbors,
             umap_min_dist=umap_min_dist
         )
         # Create DataFrames
-        df_pca_raw = pd.DataFrame(X_pca_raw, columns=['latent_x', 'latent_y'])
-        df_umap_raw = pd.DataFrame(X_umap_raw, columns=['latent_x', 'latent_y'])
+        df_pca_raw = pd.DataFrame(X_pca_raw, columns=['latent_x', 'latent_y', 'latent_z'])
+        df_umap_raw = pd.DataFrame(X_umap_raw, columns=['latent_x', 'latent_y', 'latent_z'])
 
         return df_latent, (df_pca_raw, df_umap_raw), (df_pca_scaled, df_umap_scaled)
 
