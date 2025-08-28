@@ -3,7 +3,6 @@ import sys
 from argparse import Namespace
 
 from utils.Tbx_Pipeline import load_assign_network, run_scenarios, compile_results
-from utils.Tbx_Simulation import district_visualization
 
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 if ROOT_DIR not in sys.path:
@@ -17,6 +16,7 @@ def get_parser() -> Namespace:
 
     return parser.parse_args()
 
+
 def main():
     args = get_parser()
 
@@ -24,7 +24,6 @@ def main():
     parts = args.income_density_mapping.split('_')
     level_map = {'H': 'high', 'M': 'medium', 'L': 'low'}  # make sure level_map exists
     args.income_density_mapping = [(level_map[p[0]], level_map[p[1]]) for p in parts]
-
 
     # Set up environment
     scripts_path = r"C:\Users\arthu\anaconda3\envs\TsLeaks\Scripts"
@@ -62,6 +61,7 @@ def main():
     #                            tgt_district = args.tgt_district,
     #                            save_path='../results/imgs')
     #     print("Done. See results in 'results/imgs'")
+
 
 if __name__ == "__main__":
     main()
